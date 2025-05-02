@@ -518,12 +518,15 @@ class CharacterManager {
     this.loadCharacterList();
     
     // Set up event listeners
-    elements.saveCharacter.addEventListener('click', () => this.saveCharacter());
+    elements.saveCharacter.addEventListener('click', (e) => {
+      e.preventDefault();
+      characterManager.saveCharacter(); // Use the instance directly
+    });    
     elements.loadSelectedCharacter.addEventListener('click', () => this.loadCharacter());
     elements.deleteCharacter.addEventListener('click', () => this.deleteCharacter());
   }
 
-  aveCharacter() {
+  saveCharacter() {
     // 1. Validate required fields
     const charName = elements.charName.value.trim();
     if (!charName) {
