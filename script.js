@@ -58,6 +58,28 @@ const elements = {
   editCharges: document.getElementById('editCharges')
 };
 
+console.group("Element Verification");
+const requiredElements = [
+  'charName', 'charClass', 'charRace', 'characterLevel',
+  'hp', 'ac', 'initiative', 'strength', 'dexterity',
+  'constitution', 'intelligence', 'wisdom', 'charisma',
+  'saveCharacter', 'loadSelectedCharacter', 'deleteCharacter'
+];
+
+requiredElements.forEach(id => {
+  if (!elements[id] || !document.getElementById(id)) {
+    console.error(`❌ Missing element: ${id}`);
+    // Create a dummy element if missing
+    if (!elements[id]) {
+      elements[id] = { value: '' };
+      console.warn(`Created dummy element for ${id}`);
+    }
+  } else {
+    console.log(`✓ ${id} exists`);
+  }
+});
+console.groupEnd();
+
 // Character Data
 let characterList = [];
 
@@ -755,3 +777,8 @@ document.addEventListener('DOMContentLoaded', () => {
   inventoryManager = new InventoryManager();
   characterManager = new CharacterManager();
 });
+console.log("Final elements check:", Object.keys(elements).map(key => ({
+  key,
+  exists: !!elements[key],
+  hasValue: elements[key] ? 'value' in elements[key] : false
+})));
