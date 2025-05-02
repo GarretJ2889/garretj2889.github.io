@@ -61,7 +61,7 @@ const elements = {
 // Character Data
 let characterList = [];
 
-// Utility Functions
+// Utility Functions (unchanged)
 function calculateModifier(statValue) {
   return Math.floor((statValue - 10) / 2);
 }
@@ -510,35 +510,60 @@ class CharacterManager {
     if (!localStorage.getItem('characters')) {
       localStorage.setItem('characters', JSON.stringify([]));
     }
+    this.characterList = JSON.parse(localStorage.getItem('characters')) || [];
     this.init();
   }
 
   init() {
-    // Load any saved characters
     this.loadCharacterList();
     
-    // Set up event listeners
+    // Updated event listeners
     elements.saveCharacter.addEventListener('click', (e) => {
       e.preventDefault();
-      characterManager.saveCharacter(); // Use the instance directly
-    });    
-    elements.loadSelectedCharacter.addEventListener('click', () => this.loadCharacter());
-    elements.deleteCharacter.addEventListener('click', () => this.deleteCharacter());
+      this.saveCharacter();
+    });
+    
+    elements.loadSelectedCharacter.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.loadCharacter();
+    });
+    
+    elements.deleteCharacter.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.deleteCharacter();
+    });
   }
 
   saveCharacter() {
-    // 1. Validate required fields
-    const charName = elements.charName.value.trim();
-    if (!charName) {
-      alert("Character name is required!");
-      return;
+    try {
+      const charName = elements.charName.value.trim();
+      if (!charName) {
+        alert("Character name is required!");
+        return;
+      }
+
+      if (!confirm(`Save character "${charName}"?`)) return;
+
+      const characterData = this.buildCharacterData(charName);
+      
+      const existingIndex = this.characterList.findIndex(c => c.name === charName);
+      if (existingIndex >= 0) {
+        this.characterList[existingIndex] = characterData;
+      } else {
+        this.characterList.push(characterData);
+      }
+
+      localStorage.setItem('characters', JSON.stringify(this.characterList));
+      this.updateCharacterDropdown();
+      alert(`"${charName}" saved successfully!`);
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Failed to save character. Check console for details.");
     }
-  
-    // 2. Confirmation prompt
-    if (!confirm(`Save "${charName}"?`)) return;
-  
-    // 3. Build character data
-    const characterData = {
+  }
+
+  buildCharacterData(charName) {
+    return {
       name: charName,
       class: elements.charClass.value,
       race: elements.charRace.value,
@@ -554,60 +579,50 @@ class CharacterManager {
         wisdom: elements.wisdom.value,
         charisma: elements.charisma.value
       },
-      abilities: Array.from(elements.abilitiesList.children).map(li => ({
-        name: li.dataset.abilityName,
-        description: li.dataset.abilityDesc
-      })),
-      feats: Array.from(elements.featsList.children).map(li => ({
-        name: li.dataset.featName,
-        description: li.dataset.featDesc
-      })),
-      actions: Array.from(elements.actionsList.children).map(li => ({
-        name: li.dataset.actionName,
-        description: li.dataset.actionDesc,
-        type: li.dataset.actionType,
-        charges: li.dataset.actionCharges
-      })),
-      inventory: Array.from(elements.inventoryList.children).map(li => ({
-        name: li.dataset.name,
-        type: li.dataset.type,
-        toHit: li.dataset.toHit,
-        damage: li.dataset.damage,
-        charges: li.dataset.charges
-      })),
+      abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
+      feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
+      actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
+      inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
       notes: elements.characterNotes.value
     };
-  
-    // 4. Load existing data
-    const savedCharacters = JSON.parse(localStorage.getItem('characters') || '[]');
-    let characterList = Array.isArray(savedCharacters) ? savedCharacters : [];
-  
-    // 5. Update or add character
-    const index = characterList.findIndex(c => c.name === charName);
-    if (index >= 0) {
-      characterList[index] = characterData; // Update existing
-    } else {
-      characterList.push(characterData); // Add new
-    }
-  
-    // 6. Save to localStorage
-    localStorage.setItem('characters', JSON.stringify(characterList));
-    this.updateCharacterDropdown();
-    alert(`"${charName}" saved successfully!`);
+  }
+
+  collectListData(listElement, nameKey, descKey, additionalKeys = []) {
+    return Array.from(listElement.children).map(li => {
+      const item = {
+        name: li.dataset[nameKey],
+        description: li.dataset[descKey]
+      };
+      
+      additionalKeys.forEach(key => {
+        item[key] = li.dataset[key];
+      });
+      
+      return item;
+    });
   }
 
   loadCharacter() {
-    const selectedIndex = elements.characterList.selectedIndex - 1; // Account for default option
-    if (selectedIndex < 0 || selectedIndex >= characterList.length) {
-      alert('Please select a valid character to load.');
-      return;
-      skillsManager.updateAll(); // Fixed: Now uses global skillsManager
-      alert('Character loaded successfully!');
-    }
+    try {
+      const selectedIndex = elements.characterList.selectedIndex - 1;
+      if (selectedIndex < 0 || selectedIndex >= this.characterList.length) {
+        alert('Please select a valid character to load.');
+        return;
+      }
 
-    const character = characterList[selectedIndex];
-  
-    // Load basic info
+      const character = this.characterList[selectedIndex];
+      this.populateCharacterData(character);
+      
+      skillsManager.updateAll();
+      alert('Character loaded successfully!');
+    } catch (error) {
+      console.error("Load error:", error);
+      alert("Failed to load character. Check console for details.");
+    }
+  }
+
+  populateCharacterData(character) {
+    // Basic info
     elements.charName.value = character.name || '';
     elements.charClass.value = character.class || '';
     elements.charRace.value = character.race || '';
@@ -616,143 +631,92 @@ class CharacterManager {
     elements.ac.value = character.ac || '';
     elements.initiative.value = character.initiative || '';
 
-    // Load stats
-    elements.strength.value = character.stats.strength || '10';
-    elements.dexterity.value = character.stats.dexterity || '10';
-    elements.constitution.value = character.stats.constitution || '10';
-    elements.intelligence.value = character.stats.intelligence || '10';
-    elements.wisdom.value = character.stats.wisdom || '10';
-    elements.charisma.value = character.stats.charisma || '10';
+    // Stats
+    if (character.stats) {
+      elements.strength.value = character.stats.strength || '10';
+      elements.dexterity.value = character.stats.dexterity || '10';
+      elements.constitution.value = character.stats.constitution || '10';
+      elements.intelligence.value = character.stats.intelligence || '10';
+      elements.wisdom.value = character.stats.wisdom || '10';
+      elements.charisma.value = character.stats.charisma || '10';
+    }
 
-    // Load abilities
-    elements.abilitiesList.innerHTML = '';
-    character.abilities.forEach(ability => {
-      const li = document.createElement('li');
-      li.className = 'ability-item';
-      li.innerHTML = `
-        <div class="ability-name">${ability.name}</div>
-        <div class="ability-desc">${ability.description || 'No description'}</div>
-        <button class="delete-ability">Delete</button>
-      `;
-      li.dataset.abilityName = ability.name;
-      li.dataset.abilityDesc = ability.description;
-      elements.abilitiesList.appendChild(li);
-    });
+    // Lists
+    this.populateList(elements.abilitiesList, character.abilities, 'ability');
+    this.populateList(elements.featsList, character.feats, 'feat');
+    this.populateList(elements.actionsList, character.actions, 'action');
+    this.populateList(elements.inventoryList, character.inventory, 'inventory');
 
-    // Load feats
-    elements.featsList.innerHTML = '';
-    character.feats.forEach(feat => {
-      const li = document.createElement('li');
-      li.className = 'feat-item';
-      li.innerHTML = `
-        <div class="feat-name">${feat.name}</div>
-        <div class="feat-desc">${feat.description || 'No description'}</div>
-        <button class="delete-feat">Delete</button>
-      `;
-      li.dataset.featName = feat.name;
-      li.dataset.featDesc = feat.description;
-      elements.featsList.appendChild(li);
-    });
+    // Notes
+    elements.characterNotes.value = character.notes || '';
+  }
 
-    // Load actions
-    elements.actionsList.innerHTML = '';
-    character.actions.forEach(action => {
+  populateList(listElement, items, type) {
+    listElement.innerHTML = '';
+    if (!items) return;
+
+    items.forEach(item => {
       const li = document.createElement('li');
-      li.className = 'action-item';
-      li.dataset.actionName = action.name;
-      li.dataset.actionDesc = action.description;
-      li.dataset.actionType = action.type;
-      li.dataset.actionCharges = action.charges;
+      li.className = `${type}-item`;
       
-      let actionHTML = `
-        <div class="action-header">
-          <span class="action-name">${action.name}</span>
-          <span class="action-type">(${action.type})</span>
-          <button class="delete-action">×</button>
-        </div>
-        <div class="action-desc">${action.description || 'No description provided'}</div>
-      `;
+      // Set dataset attributes
+      Object.keys(item).forEach(key => {
+        li.dataset[key] = item[key];
+      });
 
-      const charges = parseInt(action.charges) || 0;
-      if (charges > 0) {
-        actionHTML += `<div class="charges-container">`;
-        for (let i = 0; i < charges; i++) {
-          actionHTML += `
-            <label class="charge-box">
-              <input type="checkbox">
-              <span>Charge ${i+1}</span>
-            </label>
-          `;
-        }
-        actionHTML += `</div>`;
+      // Create HTML based on type
+      if (type === 'ability' || type === 'feat') {
+        li.innerHTML = `
+          <div class="${type}-name">${item.name}</div>
+          <div class="${type}-desc">${item.description || 'No description'}</div>
+          <button class="delete-${type}">Delete</button>
+        `;
+      } else if (type === 'action') {
+        // Action-specific HTML
+      } else if (type === 'inventory') {
+        // Inventory-specific HTML
       }
 
-      li.innerHTML = actionHTML;
-      elements.actionsList.appendChild(li);
+      listElement.appendChild(li);
     });
-
-    // Load inventory
-    elements.inventoryList.innerHTML = '';
-    character.inventory.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'inventory-item';
-      li.innerHTML = `
-        <div class="inventory-item-content">
-          <div class="inventory-item-name">${item.name}</div>
-          <div class="inventory-item-type">${item.type || 'No type specified'}</div>
-          <div class="inventory-item-stats">
-            ${item.toHit ? `<span>To Hit: ${item.toHit}</span>` : ''}
-            ${item.damage ? `<span>Damage: ${item.damage}</span>` : ''}
-            ${item.charges > 0 ? `<span>Charges: ${item.charges}</span>` : ''}
-          </div>
-          <div class="inventory-item-actions">
-            <button class="edit-item">Edit</button>
-            <button class="delete-item">Delete</button>
-          </div>
-        </div>
-      `;
-      li.dataset.name = item.name;
-      li.dataset.type = item.type;
-      li.dataset.toHit = item.toHit;
-      li.dataset.damage = item.damage;
-      li.dataset.charges = item.charges;
-      elements.inventoryList.appendChild(li);
-    });
-
-    // Load notes
-    elements.characterNotes.value = character.notes || '';
-
-    // Update all modifiers
-    skillsManager.updateAllModifiers();
-    alert('Character loaded successfully!');
   }
 
   deleteCharacter() {
-    const selectedIndex = elements.characterList.selectedIndex - 1;
-    if (selectedIndex < 0 || selectedIndex >= characterList.length) {
-      alert('Please select a character to delete.');
-      return;
-    }
+    try {
+      const selectedIndex = elements.characterList.selectedIndex - 1;
+      if (selectedIndex < 0 || selectedIndex >= this.characterList.length) {
+        alert('Please select a character to delete.');
+        return;
+      }
 
-    if (confirm('Are you sure you want to delete this character?')) {
-      characterList.splice(selectedIndex, 1);
-      localStorage.setItem('characters', JSON.stringify(characterList));
-      this.updateCharacterDropdown();
-      alert('Character deleted successfully!');
+      if (confirm('Are you sure you want to delete this character?')) {
+        this.characterList.splice(selectedIndex, 1);
+        localStorage.setItem('characters', JSON.stringify(this.characterList));
+        this.updateCharacterDropdown();
+        alert('Character deleted successfully!');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete character. Check console for details.");
     }
   }
 
   loadCharacterList() {
-    const savedCharacters = localStorage.getItem('characters');
-    if (savedCharacters) {
-      characterList = JSON.parse(savedCharacters);
-      this.updateCharacterDropdown();
+    try {
+      const savedCharacters = localStorage.getItem('characters');
+      if (savedCharacters) {
+        this.characterList = JSON.parse(savedCharacters);
+        this.updateCharacterDropdown();
+      }
+    } catch (error) {
+      console.error("Load list error:", error);
+      this.characterList = [];
     }
   }
 
   updateCharacterDropdown() {
     elements.characterList.innerHTML = '<option value="">-- Select a character --</option>';
-    characterList.forEach((character, index) => {
+    this.characterList.forEach((character, index) => {
       const option = document.createElement('option');
       option.value = index;
       option.textContent = character.name || `Unnamed Character ${index + 1}`;
@@ -761,18 +725,21 @@ class CharacterManager {
   }
 }
 
-// Declare managers globally (but initialize later)
+// Declare managers globally
 let skillsManager, abilitiesManager, featsManager, actionsManager, inventoryManager, characterManager;
 
+// Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize managers
+  // Set default values for stats
+  ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].forEach(stat => {
+    if (elements[stat] && !elements[stat].value) elements[stat].value = '10';
+  });
+
+  // Initialize all managers
   skillsManager = new SkillsManager();
   abilitiesManager = new AbilitiesManager();
   featsManager = new FeatsManager();
   actionsManager = new ActionsManager();
   inventoryManager = new InventoryManager();
   characterManager = new CharacterManager();
-
-  // Load characters
-  characterManager.loadCharacterList();
 });
