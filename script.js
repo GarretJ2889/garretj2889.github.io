@@ -507,132 +507,111 @@ class InventoryManager {
 // Character Manager
 class CharacterManager {
   constructor() {
-    // Initialize with empty array if no data exists
-    if (!localStorage.getItem('characters')) {
-      localStorage.setItem('characters', JSON.stringify([]));
-    }
-    this.characterList = JSON.parse(localStorage.getItem('characters')) || [];
+    // Initialize with safe defaults
+    this.characterList = [];
+    this.initializeStorage();
     this.init();
   }
 
-  init() {
-    // Verify critical elements exist
-    this.verifyElements();
-    
-    // Set up event listeners with proper binding
-    elements.saveCharacter?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.saveCharacter();
-    });
-    
-    elements.loadSelectedCharacter?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.loadCharacter();
-    });
-    
-    elements.deleteCharacter?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.deleteCharacter();
-    });
+  initializeStorage() {
+    try {
+      if (!localStorage.getItem('characters')) {
+        localStorage.setItem('characters', JSON.stringify([]));
+      }
+      this.characterList = JSON.parse(localStorage.getItem('characters')) || [];
+    } catch (e) {
+      console.error("Storage init failed:", e);
+      this.characterList = [];
+    }
   }
 
-  verifyElements() {
-    const requiredElements = [
-      'charName', 'charClass', 'charRace', 'characterLevel',
-      'hp', 'ac', 'initiative', 'strength', 'dexterity',
-      'constitution', 'intelligence', 'wisdom', 'charisma',
-      'saveCharacter', 'loadSelectedCharacter', 'deleteCharacter'
+  init() {
+    if (!this.verifyCriticalElements()) return;
+    
+    // Safe event binding
+    this.bindEvent(elements.saveCharacter, 'click', this.saveCharacter.bind(this));
+    this.bindEvent(elements.loadSelectedCharacter, 'click', this.loadCharacter.bind(this));
+    this.bindEvent(elements.deleteCharacter, 'click', this.deleteCharacter.bind(this));
+  }
+
+  verifyCriticalElements() {
+    const required = [
+      'charName', 'saveCharacter', 'loadSelectedCharacter', 'deleteCharacter',
+      'charClass', 'charRace', 'characterLevel', 'hp', 'ac', 'initiative'
     ];
     
-    requiredElements.forEach(id => {
-      if (!elements[id]) {
-        console.error(`Missing required element: ${id}`);
+    let allValid = true;
+    required.forEach(key => {
+      if (!elements[key]) {
+        console.error(`CRITICAL: Missing element ${key}`);
+        allValid = false;
       }
     });
+    
+    return allValid;
+  }
+
+  bindEvent(element, event, handler) {
+    if (!element) {
+      console.error(`Cannot bind ${event} to missing element`);
+      return;
+    }
+    element.addEventListener(event, handler);
   }
 
   safeGetValue(element, defaultValue = '') {
-    return element?.value ?? defaultValue;
+    if (!element) {
+      console.warn(`Attempted to read missing element, using default: ${defaultValue}`);
+      return defaultValue;
+    }
+    return element.value ?? defaultValue;
   }
 
   buildCharacterData(charName) {
-    return {
-      name: charName,
-      class: this.safeGetValue(elements.charClass),
-      race: this.safeGetValue(elements.charRace),
-      level: this.safeGetValue(elements.characterLevel),
-      hp: this.safeGetValue(elements.hp),
-      ac: this.safeGetValue(elements.ac),
-      initiative: this.safeGetValue(elements.initiative),
-      stats: {
-        strength: this.safeGetValue(elements.strength, '10'),
-        dexterity: this.safeGetValue(elements.dexterity, '10'),
-        constitution: this.safeGetValue(elements.constitution, '10'),
-        intelligence: this.safeGetValue(elements.intelligence, '10'),
-        wisdom: this.safeGetValue(elements.wisdom, '10'),
-        charisma: this.safeGetValue(elements.charisma, '10')
-      },
-      abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
-      feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
-      actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
-      inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
-      notes: this.safeGetValue(elements.characterNotes)
-    };
+    try {
+      return {
+        name: charName,
+        class: this.safeGetValue(elements.charClass),
+        race: this.safeGetValue(elements.charRace),
+        level: this.safeGetValue(elements.characterLevel),
+        hp: this.safeGetValue(elements.hp),
+        ac: this.safeGetValue(elements.ac),
+        initiative: this.safeGetValue(elements.initiative),
+        stats: {
+          strength: this.safeGetValue(elements.strength, '10'),
+          dexterity: this.safeGetValue(elements.dexterity, '10'),
+          constitution: this.safeGetValue(elements.constitution, '10'),
+          intelligence: this.safeGetValue(elements.intelligence, '10'),
+          wisdom: this.safeGetValue(elements.wisdom, '10'),
+          charisma: this.safeGetValue(elements.charisma, '10')
+        },
+        abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
+        feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
+        actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
+        inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
+        notes: this.safeGetValue(elements.characterNotes)
+      };
+    } catch (e) {
+      console.error("Data build failed:", e);
+      throw new Error("Failed to build character data");
+    }
   }
 
   saveCharacter() {
     try {
-      console.log('SaveCharacter method executing...');
-      const charName = elements.charName.value.trim();
+      console.log("Save initiated...");
+      const charName = this.safeGetValue(elements.charName).trim();
       
       if (!charName) {
         alert("Character name is required!");
         return;
       }
 
-      if (!confirm(`Save character "${charName}"?`)) return;
+      if (!confirm(`Save "${charName}"?`)) return;
 
-      const characterData = {
-        name: charName,
-        class: elements.charClass.value,
-        race: elements.charRace.value,
-        level: elements.characterLevel.value,
-        hp: elements.hp.value,
-        ac: elements.ac.value,
-        initiative: elements.initiative.value,
-        stats: {
-          strength: elements.strength.value,
-          dexterity: elements.dexterity.value,
-          constitution: elements.constitution.value,
-          intelligence: elements.intelligence.value,
-          wisdom: elements.wisdom.value,
-          charisma: elements.charisma.value
-        },
-        abilities: Array.from(elements.abilitiesList.children).map(li => ({
-          name: li.dataset.abilityName,
-          description: li.dataset.abilityDesc
-        })),
-        feats: Array.from(elements.featsList.children).map(li => ({
-          name: li.dataset.featName,
-          description: li.dataset.featDesc
-        })),
-        actions: Array.from(elements.actionsList.children).map(li => ({
-          name: li.dataset.actionName,
-          description: li.dataset.actionDesc,
-          type: li.dataset.actionType,
-          charges: li.dataset.actionCharges
-        })),
-        inventory: Array.from(elements.inventoryList.children).map(li => ({
-          name: li.dataset.name,
-          type: li.dataset.type,
-          toHit: li.dataset.toHit,
-          damage: li.dataset.damage,
-          charges: li.dataset.charges
-        })),
-        notes: elements.characterNotes.value
-      };
-
+      const characterData = this.buildCharacterData(charName);
       const existingIndex = this.characterList.findIndex(c => c.name === charName);
+      
       if (existingIndex >= 0) {
         this.characterList[existingIndex] = characterData;
       } else {
@@ -641,10 +620,10 @@ class CharacterManager {
 
       localStorage.setItem('characters', JSON.stringify(this.characterList));
       this.updateCharacterDropdown();
-      alert(`"${charName}" saved successfully!`);
+      alert(`"${charName}" saved!`);
     } catch (error) {
-      console.error('Save error:', error);
-      alert('Failed to save character. Check console for details.');
+      console.error("Save failed:", error);
+      alert(`Save error: ${error.message}`);
     }
   }
 
