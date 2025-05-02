@@ -507,53 +507,77 @@ class InventoryManager {
 // Character Manager
 class CharacterManager {
   constructor() {
-    // Initialize character list from localStorage
+    // Initialize with empty array if no data exists
     if (!localStorage.getItem('characters')) {
       localStorage.setItem('characters', JSON.stringify([]));
     }
     this.characterList = JSON.parse(localStorage.getItem('characters')) || [];
-    
-    // Bind methods to maintain proper 'this' context
-    this.saveCharacter = this.saveCharacter.bind(this);
-    this.loadCharacter = this.loadCharacter.bind(this);
-    this.deleteCharacter = this.deleteCharacter.bind(this);
-    
     this.init();
   }
 
   init() {
-    // Debug: Verify buttons exist in DOM
-    console.log('Initializing CharacterManager...');
-    console.log('Save button:', elements.saveCharacter);
-    console.log('Load button:', elements.loadSelectedCharacter);
-    console.log('Delete button:', elements.deleteCharacter);
-
-    // Remove any existing listeners to prevent duplicates
-    elements.saveCharacter.removeEventListener('click', this.saveCharacter);
-    elements.loadSelectedCharacter.removeEventListener('click', this.loadCharacter);
-    elements.deleteCharacter.removeEventListener('click', this.deleteCharacter);
+    // Verify critical elements exist
+    this.verifyElements();
     
-    // Add robust event listeners
-    elements.saveCharacter.addEventListener('click', (e) => {
+    // Set up event listeners with proper binding
+    elements.saveCharacter?.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('Save button clicked - event triggered');
       this.saveCharacter();
     });
     
-    elements.loadSelectedCharacter.addEventListener('click', (e) => {
+    elements.loadSelectedCharacter?.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('Load button clicked - event triggered');
       this.loadCharacter();
     });
     
-    elements.deleteCharacter.addEventListener('click', (e) => {
+    elements.deleteCharacter?.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('Delete button clicked - event triggered');
       this.deleteCharacter();
     });
+  }
+
+  verifyElements() {
+    const requiredElements = [
+      'charName', 'charClass', 'charRace', 'characterLevel',
+      'hp', 'ac', 'initiative', 'strength', 'dexterity',
+      'constitution', 'intelligence', 'wisdom', 'charisma',
+      'saveCharacter', 'loadSelectedCharacter', 'deleteCharacter'
+    ];
+    
+    requiredElements.forEach(id => {
+      if (!elements[id]) {
+        console.error(`Missing required element: ${id}`);
+      }
+    });
+  }
+
+  safeGetValue(element, defaultValue = '') {
+    return element?.value ?? defaultValue;
+  }
+
+  buildCharacterData(charName) {
+    return {
+      name: charName,
+      class: this.safeGetValue(elements.charClass),
+      race: this.safeGetValue(elements.charRace),
+      level: this.safeGetValue(elements.characterLevel),
+      hp: this.safeGetValue(elements.hp),
+      ac: this.safeGetValue(elements.ac),
+      initiative: this.safeGetValue(elements.initiative),
+      stats: {
+        strength: this.safeGetValue(elements.strength, '10'),
+        dexterity: this.safeGetValue(elements.dexterity, '10'),
+        constitution: this.safeGetValue(elements.constitution, '10'),
+        intelligence: this.safeGetValue(elements.intelligence, '10'),
+        wisdom: this.safeGetValue(elements.wisdom, '10'),
+        charisma: this.safeGetValue(elements.charisma, '10')
+      },
+      abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
+      feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
+      actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
+      inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
+      notes: this.safeGetValue(elements.characterNotes)
+    };
   }
 
   saveCharacter() {
