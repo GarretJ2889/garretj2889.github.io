@@ -7,25 +7,22 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="top-left-image">
-        <img src="https://github.com/GarretJ2889/garretj2889.github.io/blob/main/logo.webp" alt="Character Image" id="characterImage">
-      </div>
+  <div class="top-left-image">
+    <img src="https://raw.githubusercontent.com/GarretJ2889/garretj2889.github.io/main/logo.webp" alt="Character Image" id="characterImage">
+  </div>
+  
   <div class="character-sheet">
-
     <header>
       <h1>D&D Character Sheet</h1>
     </header>
 
-    <button id="toggleViewButton">Switch to Character Sheet View</button>
-
     <!-- Editable View -->
-    <div id="editView" style="display: block;">
+    <div id="editView">
       <section class="basic-info">
         <div>
           <label for="charName">Name:</label>
           <input type="text" id="charName" placeholder="Character Name">
         </div>
-
 
         <div>
           <label for="charClass">Class:</label>
@@ -34,13 +31,12 @@
             <option value="Bard">Bard</option>
             <option value="Cleric">Cleric</option>
             <option value="Druid">Druid</option>
-            <option value="Artaficer">Artaficer</option>
+            <option value="Artificer">Artificer</option>
             <option value="Fighter">Fighter</option>
             <option value="Wizard">Wizard</option>
             <option value="Rogue">Rogue</option>
           </select>
         </div>
-
 
         <div>
           <label for="charRace">Race:</label>
@@ -73,102 +69,411 @@
         </div>
 
         <div>
-            <label for="hp">HP:</label>
-            <input type="number" id="hp" value="10" min="0">
-          </div>
+          <label for="hp">HP:</label>
+          <input type="number" id="hp" value="10" min="0">
+        </div>
 
-          <div>
-            <label for="ac">AC:</label>
-            <input type="number" id="ac" value="10" min="0">
-          </div>
-          <div>
-            <label for="initiative">Initiative:</label>
-            <input type="number" id="initiative" placeholder="Defaults to Dexterity Modifier">
-          </div>
+        <div>
+          <label for="ac">AC:</label>
+          <input type="number" id="ac" value="10" min="0">
+        </div>
+        <div>
+          <label for="initiative">Initiative:</label>
+          <input type="number" id="initiative" placeholder="Defaults to Dexterity Modifier">
+        </div>
       </section>
 
+      <section class="stats-container">
+        <!-- Strength Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="strength">Strength</label>
+            <input type="number" id="strength" value="10" class="stat-input">
+            <span id="strengthModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Strength Save:</label>
+              <span class="skill-modifier" id="strengthSaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="strength">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="stat-skills">
+            <div class="skill-row">
+              <label>Athletics (Str):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="strength">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-      <section class="stats">
-        <h2>Stats</h2>
-        <div class="stat-row">
-          <label for="strength">Strength</label>
-          <input type="number" id="strength" value="10">
-          <span id="strengthModifier">+0</span>
+        <!-- Dexterity Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="dexterity">Dexterity</label>
+            <input type="number" id="dexterity" value="10" class="stat-input">
+            <span id="dexterityModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Dexterity Save:</label>
+              <span class="skill-modifier" id="dexteritySaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="dexterity">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="stat-skills">
+            <div class="skill-row">
+              <label>Acrobatics (Dex):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="dexterity">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Sleight of Hand (Dex):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="dexterity">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Stealth (Dex):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="dexterity">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="stat-row">
-          <label for="dexterity">Dexterity</label>
-          <input type="number" id="dexterity" value="10">
-          <span id="dexterityModifier">+0</span>
+
+        <!-- Constitution Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="constitution">Constitution</label>
+            <input type="number" id="constitution" value="10" class="stat-input">
+            <span id="constitutionModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Constitution Save:</label>
+              <span class="skill-modifier" id="constitutionSaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="constitution">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="stat-row">
-          <label for="constitution">Constitution</label>
-          <input type="number" id="constitution" value="10">
-          <span id="constitutionModifier">+0</span>
+
+        <!-- Intelligence Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="intelligence">Intelligence</label>
+            <input type="number" id="intelligence" value="10" class="stat-input">
+            <span id="intelligenceModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Intelligence Save:</label>
+              <span class="skill-modifier" id="intelligenceSaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="stat-skills">
+            <div class="skill-row">
+              <label>Arcana (Int):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>History (Int):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Investigation (Int):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Nature (Int):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Religion (Int):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="intelligence">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="stat-row">
-          <label for="intelligence">Intelligence</label>
-          <input type="number" id="intelligence" value="10">
-          <span id="intelligenceModifier">+0</span>
+
+        <!-- Wisdom Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="wisdom">Wisdom</label>
+            <input type="number" id="wisdom" value="10" class="stat-input">
+            <span id="wisdomModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Wisdom Save:</label>
+              <span class="skill-modifier" id="wisdomSaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="stat-skills">
+            <div class="skill-row">
+              <label>Animal Handling (Wis):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Insight (Wis):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Medicine (Wis):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Perception (Wis):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Survival (Wis):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="wisdom">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="stat-row">
-          <label for="wisdom">Wisdom</label>
-          <input type="number" id="wisdom" value="10">
-          <span id="wisdomModifier">+0</span>
-        </div>
-        <div class="stat-row">
-          <label for="charisma">Charisma</label>
-          <input type="number" id="charisma" value="10">
-          <span id="charismaModifier">+0</span>
+
+        <!-- Charisma Block -->
+        <div class="stat-block">
+          <div class="stat-row">
+            <label for="charisma">Charisma</label>
+            <input type="number" id="charisma" value="10" class="stat-input">
+            <span id="charismaModifier" class="stat-modifier">+0</span>
+          </div>
+          
+          <div class="saving-throw">
+            <div class="skill-row">
+              <label>Charisma Save:</label>
+              <span class="skill-modifier" id="charismaSaveMod">+0</span>
+              <select class="saving-throw-select" data-stat="charisma">
+                <option value="none" selected>None</option>
+                <option value="proficient">Proficient</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="stat-skills">
+            <div class="skill-row">
+              <label>Deception (Cha):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="charisma">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Intimidation (Cha):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="charisma">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Performance (Cha):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="charisma">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+            <div class="skill-row">
+              <label>Persuasion (Cha):</label>
+              <span class="skill-modifier">+0</span>
+              <select class="skill-select" data-stat="charisma">
+                <option value="none" selected>None</option>
+                <option value="half">Half Proficiency</option>
+                <option value="proficient">Proficient</option>
+                <option value="expertise">Expertise</option>
+              </select>
+            </div>
+          </div>
         </div>
       </section>
 
       <section class="abilities">
         <h2>Abilities</h2>
-        <input type="text" id="newAbility" placeholder="Enter ability">
-        <button id="addAbility">Add Ability</button>
+        <div class="ability-inputs">
+          <input type="text" id="newAbilityName" placeholder="Ability Name">
+          <textarea id="newAbilityDesc" placeholder="Ability Description"></textarea>
+          <button id="addAbility">Add Ability</button>
+        </div>
         <ul id="abilitiesList"></ul>
       </section>
 
       <section class="feats">
         <h2>Feats</h2>
-        <input type="text" id="newFeat" placeholder="Enter feat">
-        <button id="addFeat">Add Feat</button>
+        <div class="feat-inputs">
+          <input type="text" id="newFeatName" placeholder="Feat Name">
+          <textarea id="newFeatDesc" placeholder="Feat Description"></textarea>
+          <button id="addFeat">Add Feat</button>
+        </div>
         <ul id="featsList"></ul>
       </section>
 
       <section class="actions">
         <h2>Actions</h2>
-        <label for="actionType">Action Type:</label>
-        <select id="actionType">
-          <option value="">Select</option>
-          <option value="Weapon">Weapon</option>
-          <option value="Ability">Ability</option>
-          <option value="Feat">Feat</option>
-        </select>
-
-        <div id="weaponInputs" style="display: none;">
-          <label for="toHit">To Hit:</label>
-          <input type="number" id="toHit" placeholder="Enter to-hit bonus">
-
-          <label for="damage">Damage:</label>
-          <input type="text" id="damage" placeholder="Enter damage (e.g., 1d8 + 3)">
+        <div class="action-inputs">
+          <label for="actionType">Action Type:</label>
+          <select id="actionType">
+            <option value="">Select</option>
+            <option value="Action">Action</option>
+            <option value="Bounus Action">Bounus Action</option>
+            <option value="Reaction">Reaction</option>
+          </select>
+      
+          <input type="text" id="newActionName" placeholder="Action name">
+          <textarea id="newActionDesc" placeholder="Action description"></textarea>
+          
+          <div class="charges-input">
+            <label for="actionCharges">Charges:</label>
+            <input type="number" id="actionCharges" min="0" value="0">
+            <span>(0 = no charges)</span>
+          </div>
+          
+          <button id="addAction">Add Action</button>
         </div>
-
-        <input type="text" id="newActionName" placeholder="Enter action name">
-        <button id="addAction">Add Custom Action</button>
         <ul id="actionsList"></ul>
       </section>
 
       <section class="inventory">
         <h2>Inventory</h2>
-        <input type="text" id="newItem" placeholder="Item Name">
-        <input type="text" id="newItemType" placeholder="Type (e.g., Weapon, Armor)">
-        <input type="text" id="newToHit" placeholder="To Hit or saving throw ">
-        <input type="text" id="newDamage" placeholder="Damage (e.g., 1d8 + 3)">
-        <input type="number" id="newCharges" placeholder="Charges (Optional)" min="0">
-        <button id="addItem">Add Item</button>
+        <div class="inventory-inputs">
+          <input type="text" id="newItem" placeholder="Item Name">
+          <input type="text" id="newItemType" placeholder="Type (e.g., Weapon, Armor)">
+          <input type="text" id="newToHit" placeholder="To Hit or Saving Throw">
+          <input type="text" id="newDamage" placeholder="Damage (e.g., 1d8 + 3)">
+          <input type="number" id="newCharges" placeholder="Charges (Optional)" min="0">
+          <button id="addItem">Add Item</button>
+        </div>
         <ul id="inventoryList"></ul>
       </section>
+      
+      <!-- Edit Modal (updated) -->
+      <div id="editItemModal" class="modal">
+        <div class="modal-content">
+          <h2>Edit Item</h2>
+          <input type="text" id="editItemName" placeholder="Item Name">
+          <input type="text" id="editItemType" placeholder="Type">
+          <input type="text" id="editToHit" placeholder="To Hit">
+          <input type="text" id="editDamage" placeholder="Damage">
+          <input type="number" id="editCharges" placeholder="Charges" min="0">
+          <div class="modal-buttons">
+            <button id="saveItemChanges">Save Changes</button>
+            <button id="deleteItem">Delete Item</button>
+            <button id="cancelEdit">Cancel</button>
+          </div>
+        </div>
+      </div>
 
       <section class="attunement">
         <h2>Attunement</h2>
@@ -200,26 +505,12 @@
         </div>
       </div>
 
-      <section class="skills">
-        <h2>Skills</h2>
-        <div class="skill-row">
-          <label for="acrobatics">Acrobatics (Dex):</label>
-          <select id="acrobatics" class="skill-select" data-ability="dexterity">
-            <option value="none">None</option>
-            <option value="half">Half Proficiency</option>
-            <option value="proficient">Proficient</option>
-            <option value="expertise">Expertise</option>
-          </select>
-        </div>
-        <!-- Repeat for all skills -->
-
       <section class="notes">
         <h2>Notes</h2>
         <textarea id="characterNotes" rows="6" placeholder="Enter your inventory, goals, or notes..."></textarea>
       </section>
 
-
-      <section class="Save and load">
+      <section class="save-load">
         <button id="saveCharacter">Save Character</button>
         <label for="characterList">Select Character:</label>
         <select id="characterList">
@@ -230,71 +521,8 @@
       </section>
     </div>
 
-    <!-- Character Sheet View -->
-    <div id="characterSheetView" style="display: none;">
-        <h2 id="displayNameSheet">Character Name</h2>
-      
-        <p><strong>Class:</strong> <span id="displayClassSheet">-</span></p>
-        <p><strong>Race:</strong> <span id="displayRaceSheet">-</span></p>
-        <p><strong>Level:</strong> <span id="displayLevelSheet">1</span></p>
-        <p><strong>Proficiency Bonus:</strong> <span id="displayProficiencyBonusSheet" class="rollable">+2</span></p>
-
-      <div class="hp-ac">
-        <label for="characterHpSheet">HP:</label>
-        <input type="number" id="characterHpSheet" value="10" min="0">
-        <p><strong>AC:</strong> <span id="displayAcSheet">10</span></p>
-        <p><strong>Initiative:</strong> <span id="displayInitiativeSheet" class="rollable">+0</span></p>
-      </div>
-
-      <h3>Stats</h3>
-      <div class="stats-display">
-        <div class="stat-row">
-          <span>Strength</span>
-          <span id="displayStrength" class="rollable" data-modifier="strength">10 (+0)</span>
-        </div>
-        <div class="stat-row">
-          <span>Dexterity</span>
-          <span id="displayDexterity" class="rollable" data-modifier="dexterity">10 (+0)</span>
-        </div>
-        <div class="stat-row">
-          <span>Constitution</span>
-          <span id="displayConstitution" class="rollable" data-modifier="constitution">10 (+0)</span>
-        </div>
-        <div class="stat-row">
-          <span>Intelligence</span>
-          <span id="displayIntelligence" class="rollable" data-modifier="intelligence">10 (+0)</span>
-        </div>
-        <div class="stat-row">
-          <span>Wisdom</span>
-          <span id="displayWisdom" class="rollable" data-modifier="wisdom">10 (+0)</span>
-        </div>
-        <div class="stat-row">
-          <span>Charisma</span>
-          <span id="displayCharisma" class="rollable" data-modifier="charisma">10 (+0)</span>
-        </div>
-      </div>
-    
-      <div id="diceRollResult" style="display: none;">
-        <p>Roll Result: <span id="rollOutput">-</span></p>
-      </div>
-
-      <h3>Inventory</h3>
-      <ul id="displayInventorySheet"></ul>
-
-      <h3>Abilities</h3>
-      <ul id="displayAbilitiesSheet"></ul>
-
-      <h3>Feats</h3>
-      <ul id="displayFeatsSheet"></ul>
-
-      <h3>Actions</h3>
-      <ul id="displayActionsSheet"></ul>
-
-      <h3>Skills</h3>
-      <div id="skillsDisplay" class="rollable"></div>
-
-      <h3>Notes</h3>
-      <p id="displayNotesSheet">-</p>
+    <div id="diceRollResult" style="display: none;">
+      <p>Roll Result: <span id="rollOutput">-</span></p>
     </div>
 
     <script src="script.js"></script>

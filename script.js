@@ -1,423 +1,784 @@
-    // Global Variables and Element Selection
-    //============================================================================//
-// Array to hold all saved characters
+// DOM Elements
+const elements = {
+  // Character Info
+  charName: document.getElementById('charName'),
+  charClass: document.getElementById('charClass'),
+  charRace: document.getElementById('charRace'),
+  characterLevel: document.getElementById('characterLevel'),
+  hp: document.getElementById('hp'),
+  ac: document.getElementById('ac'),
+  initiative: document.getElementById('initiative'),
+  proficiencyBonus: document.getElementById('proficiencyBonus'),
+  
+  // Stats
+  strength: document.getElementById('strength'),
+  dexterity: document.getElementById('dexterity'),
+  constitution: document.getElementById('constitution'),
+  intelligence: document.getElementById('intelligence'),
+  wisdom: document.getElementById('wisdom'),
+  charisma: document.getElementById('charisma'),
+  
+  // Abilities
+  newAbilityName: document.getElementById('newAbilityName'),
+  newAbilityDesc: document.getElementById('newAbilityDesc'),
+  abilitiesList: document.getElementById('abilitiesList'),
+  
+  // Feats
+  newFeatName: document.getElementById('newFeatName'),
+  newFeatDesc: document.getElementById('newFeatDesc'),
+  featsList: document.getElementById('featsList'),
+  
+  // Actions
+  actionType: document.getElementById('actionType'),
+  newActionName: document.getElementById('newActionName'),
+  newActionDesc: document.getElementById('newActionDesc'),
+  actionCharges: document.getElementById('actionCharges'),
+  actionsList: document.getElementById('actionsList'),
+  
+  // Inventory
+  newItem: document.getElementById('newItem'),
+  newItemType: document.getElementById('newItemType'),
+  newToHit: document.getElementById('newToHit'),
+  newDamage: document.getElementById('newDamage'),
+  newCharges: document.getElementById('newCharges'),
+  inventoryList: document.getElementById('inventoryList'),
+  
+  // Character Management
+  characterList: document.getElementById('characterList'),
+  saveCharacter: document.getElementById('saveCharacter'),
+  loadSelectedCharacter: document.getElementById('loadSelectedCharacter'),
+  deleteCharacter: document.getElementById('deleteCharacter'),
+  
+  // Modals
+  editItemModal: document.getElementById('editItemModal'),
+  editItemName: document.getElementById('editItemName'),
+  editItemType: document.getElementById('editItemType'),
+  editToHit: document.getElementById('editToHit'),
+  editDamage: document.getElementById('editDamage'),
+  editCharges: document.getElementById('editCharges')
+};
+
+// Character Data
 let characterList = [];
 
-// Character Management Elements
-const saveCharacterButton = document.getElementById('saveCharacter');
-const loadSelectedCharacterButton = document.getElementById('loadSelectedCharacter');
-const deleteCharacterButton = document.getElementById('deleteCharacter');
-const characterDropdown = document.getElementById('characterList');
+// Utility Functions
+function calculateModifier(statValue) {
+  return Math.floor((statValue - 10) / 2);
+}
 
-// Inventory Management Elements
-const newItemInput = document.getElementById('newItem');
-const newItemTypeInput = document.getElementById('newItemType');
-const newToHitInput = document.getElementById('newToHit');
-const newDamageInput = document.getElementById('newDamage');
-const newChargesInput = document.getElementById('newCharges');
-const itemDetailsInput = document.getElementById('itemDetails');
-const addItemButton = document.getElementById('addItem');
-const inventoryList = document.getElementById('inventoryList');
-const displayInventorySheet = document.getElementById('displayInventorySheet');
+function formatModifier(modifier) {
+  return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+}
 
-// Basic Character Info Elements
-const charNameInput = document.getElementById('charName');
-const charClassSelect = document.getElementById('charClass');
-const charRaceSelect = document.getElementById('charRace');
-const characterLevelInput = document.getElementById('characterLevel');
-const hpInput = document.getElementById('hp');
-const acInput = document.getElementById('ac');
-const initiativeInput = document.getElementById('initiative');
+function getProficiencyBonus(level) {
+  return Math.floor((level - 1) / 4) + 2;
+}
 
-// Stat Input Elements
-const strengthInput = document.getElementById('strength');
-const dexterityInput = document.getElementById('dexterity');
-const constitutionInput = document.getElementById('constitution');
-const intelligenceInput = document.getElementById('intelligence');
-const wisdomInput = document.getElementById('wisdom');
-const charismaInput = document.getElementById('charisma');
-
-// Character Sheet Display Elements
-const toggleViewButton = document.getElementById('toggleViewButton');
-const editView = document.getElementById('editView');
-const characterSheetView = document.getElementById('characterSheetView');
-
-// Abilities, Feats, Actions, and Notes
-const abilitiesList = document.getElementById('abilitiesList');
-const featsList = document.getElementById('featsList');
-const actionsList = document.getElementById('actionsList');
-const characterNotesInput = document.getElementById('characterNotes');
-const displayAbilitiesSheet = document.getElementById('displayAbilitiesSheet');
-const displayFeatsSheet = document.getElementById('displayFeatsSheet');
-const displayActionsSheet = document.getElementById('displayActionsSheet');
-const displayNotesSheet = document.getElementById('displayNotesSheet');
-
-// Dice Roll Elements
-const diceRollResult = document.getElementById('diceRollResult');
-const rollOutput = document.getElementById('rollOutput');
-
-// Skills Management Elements
-const skillSelects = document.querySelectorAll('.skill-select');
-const skillsDisplay = document.getElementById('skillsDisplay');
-
-// Inventory Edit Elements
-const editItemModal = document.getElementById('editItemModal');
-const editItemName = document.getElementById('editItemName');
-const editItemDetails = document.getElementById('editItemDetails');
-const editItemQuantity = document.getElementById('editItemQuantity');
-const saveItemChangesButton = document.getElementById('saveItemChanges');
-let currentEditItem = null;
-
-// Attunement Elements
-const attunementSlots = document.querySelectorAll('.attunement-slot');
-let selectedAttunementSlot = null;
-let dropdownOpen = false;
-
-
-
-
-    // Utility Functions
-    //============================================================================//
-function getProficiencyBonus() {
-    const level = parseInt(characterLevelInput.value, 10);
-    return Math.floor((level - 1) / 4) + 2;
+// Stats and Skills Manager
+class SkillsManager {
+  constructor() {
+    this.init();
   }
-  
-  function calculateModifier(stat) {
-    return Math.floor((stat - 10) / 2);
+
+  init() {
+    this.setupEventListeners();
+    this.updateAll();
   }
-  
-  function formatModifier(modifier) {
-    return modifier >= 0 ? `+${modifier}` : `${modifier}`;
-  }
-  
-  function openEditModal(itemElement) {
-    const [itemName, itemDetails] = itemElement.textContent.split(' (');
-    editItemName.value = itemName.trim();
-    editItemDetails.value = itemDetails.replace(')', '').trim();
-    editItemQuantity.value = itemElement.dataset.quantity || 1;
-    currentEditItem = itemElement;
-    editItemModal.style.display = 'block';
-  }
-  
-  function closeEditModal() {
-    editItemModal.style.display = 'none';
-    currentEditItem = null;
-  }
-  
-  function syncAbilities() {
-    // Clear any existing abilities in the character sheet view
-    displayAbilitiesSheet.innerHTML = '';
-  
-    // Loop through the abilities list from the edit view
-    abilitiesList.querySelectorAll('li').forEach(ability => {
-      // Create a new row for each ability
-      const abilityRow = document.createElement('div');
-      abilityRow.textContent = ability.textContent;
-  
-      // Append the ability row to the character sheet abilities section
-      displayAbilitiesSheet.appendChild(abilityRow);
+
+  setupEventListeners() {
+    // Stat inputs
+    document.querySelectorAll('.stat-block input[type="number"]').forEach(input => {
+      input.addEventListener('input', () => this.updateAll());
     });
-  }
 
-  function syncFeats() {
-    // Clear any existing feats in the character sheet view
-    displayFeatsSheet.innerHTML = '';
-  
-    // Loop through the feats list from the edit view
-    featsList.querySelectorAll('li').forEach(feat => {
-      // Create a new div for each feat
-      const featRow = document.createElement('div');
-      featRow.textContent = feat.textContent;
-  
-      // Append the feat to the character sheet feats section
-      displayFeatsSheet.appendChild(featRow);
+    // Proficiency selects
+    document.querySelectorAll('.saving-throw-select, .skill-select').forEach(select => {
+      select.addEventListener('change', () => this.updateAll());
     });
+
+    // Level input
+    elements.characterLevel.addEventListener('input', () => this.updateAll());
   }
 
-  function syncActions() {
-    // Clear any existing feats in the character sheet view
-    displayActionsSheet.innerHTML = '';
-  
-    // Loop through the feats list from the edit view
-    actionsList.querySelectorAll('li').forEach(actions => {
-      // Create a new div for each feat
-      const actionsRow = document.createElement('div');
-      actionsRow.textContent = actions.textContent;
-  
-      // Append the feat to the character sheet feats section
-      displayActionsSheet.appendChild(actionsRow);
-    });
-  }
+  updateAll() {
+    try {
+      const level = parseInt(elements.characterLevel.value) || 1;
+      const profBonus = getProficiencyBonus(level);
+      elements.proficiencyBonus.textContent = formatModifier(profBonus);
 
-  function syncNotes() {
-    // Clear the existing notes in the character sheet view
-    displayNotesSheet.innerHTML = '';
-  
-    // Get the notes from the edit view
-    const notesContent = characterNotesInput.value.trim();
-  
-    // Check if there are any notes to display
-    if (notesContent) {
-      const notesParagraph = document.createElement('p');
-      notesParagraph.textContent = notesContent;
-  
-      // Append the notes to the character sheet notes section
-      displayNotesSheet.appendChild(notesParagraph);
-    } else {
-      // If no notes, display a placeholder message
-      displayNotesSheet.textContent = 'No notes available.';
+      // Update all stats and their derivatives
+      ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].forEach(stat => {
+        this.updateStat(stat, profBonus);
+      });
+    } catch (error) {
+      console.error('Update error:', error);
     }
   }
 
-
-
-
-  // Dice Rolling Logic
-  //============================================================================//
-  function rollD20(modifier) {
-    const roll = Math.floor(Math.random() * 20) + 1;
-    const total = roll + modifier;
-    return { roll, total };
-  }
-  
-  function displayRollResult(roll, modifier, total) {
-    rollOutput.textContent = `Rolled: ${roll} + ${modifier} = ${total}`;
-    diceRollResult.style.display = 'block';
-    setTimeout(() => (diceRollResult.style.display = 'none'), 5000);
-  }
-  
-  document.querySelectorAll('.rollable').forEach(element => {
-    element.addEventListener('click', () => {
-      const modifier = parseInt(element.dataset.modifier, 10) || 0; // Get the modifier from data attribute
-      const { roll, total } = rollD20(modifier); // Roll a d20 with the modifier
-      displayRollResult(roll, modifier, total); // Display the result
-    });
-  });
-
-  
-
-
-    // Inventory and Skills Management
-    //============================================================================//
-    addItemButton.addEventListener('click', addItem);
-    function addItem() {
-        const itemName = newItemInput.value.trim();
-        const itemType = newItemTypeInput.value.trim();
-        const toHit = newToHitInput.value.trim();
-        const damage = newDamageInput.value.trim();
-        const charges = parseInt(newChargesInput.value, 10) || 0;
-      
-        if (!itemName) return alert('Item name is required.');
-      
-        const li = document.createElement('li');
-        li.textContent = `${itemName} (${itemType}) - To Hit: ${toHit}, Damage: ${damage}`;
-        li.dataset.charges = charges;
-      
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Edit';
-        editButton.addEventListener('click', () => openEditModal(li));
-        li.appendChild(editButton);
-      
-        inventoryList.appendChild(li);
-        newItemInput.value = '';
-        newItemTypeInput.value = '';
-        newToHitInput.value = '';
-        newDamageInput.value = '';
-        newChargesInput.value = '';
-      }
-      
-      function syncInventory() {
-        displayInventorySheet.innerHTML = '';
-        inventoryList.querySelectorAll('li').forEach(item => {
-          const itemRow = document.createElement('div');
-          itemRow.textContent = item.textContent;
-      
-          if (item.classList.contains('attuned-item')) {
-            itemRow.classList.add('attuned-item');
-          }
-      
-          const charges = parseInt(item.dataset.charges, 10) || 0;
-          if (charges > 0) {
-            const checkboxContainer = document.createElement('div');
-            for (let i = 0; i < charges; i++) {
-              const checkbox = document.createElement('input');
-              checkbox.type = 'checkbox';
-              checkboxContainer.appendChild(checkbox);
-            }
-            itemRow.appendChild(checkboxContainer);
-          }
-      
-          displayInventorySheet.appendChild(itemRow);
-        });
-      }
-      function syncSkills() {
-        skillsDisplay.innerHTML = '';
-        document.querySelectorAll('.skill-select').forEach(select => {
-          const skillName = select.previousElementSibling.textContent;
-          const ability = select.getAttribute('data-ability');
-          const abilityModifier = calculateModifier(document.getElementById(ability).value);
-      
-          const skillRow = document.createElement('div');
-          skillRow.textContent = `${skillName}: ${formatModifier(abilityModifier)}`;
-          skillsDisplay.appendChild(skillRow);
-        });
-      }
-      
-      // Example utility to sync inventory (add similar functions for other sections)
-      function syncInventory() {
-        displayInventorySheet.innerHTML = inventoryList.innerHTML;
-      }
-
-
-
-
-
-// View and Character Sheet Management
-//============================================================================//
-toggleViewButton.addEventListener('click', () => {
-    const isEditViewVisible = editView.style.display === 'block';
-  
-    if (isEditViewVisible) {
-      // Switch to Character Sheet View
-      populateCharacterSheetView();
-      syncSkills();
-      editView.style.display = 'none';
-      characterSheetView.style.display = 'block';
-      toggleViewButton.textContent = 'Switch to Edit View';
-    } else {
-      // Switch to Edit View
-      editView.style.display = 'block';
-      characterSheetView.style.display = 'none';
-      toggleViewButton.textContent = 'Switch to Character Sheet View';
+  updateStat(stat, profBonus) {
+    const value = parseInt(elements[stat].value) || 10;
+    const modifier = calculateModifier(value);
+    
+    // Update base modifier
+    document.getElementById(`${stat}Modifier`).textContent = formatModifier(modifier);
+    
+    // Update saving throw
+    const statBlock = elements[stat].closest('.stat-block');
+    const saveRow = statBlock.querySelector('.saving-throw .skill-row');
+    if (saveRow) {
+      const isProficient = saveRow.querySelector('.saving-throw-select').value === 'proficient';
+      const saveMod = isProficient ? modifier + profBonus : modifier;
+      saveRow.querySelector('.skill-modifier').textContent = formatModifier(saveMod);
     }
-  });
-  
-  function populateCharacterSheetView() {
-    document.getElementById('displayNameSheet').textContent = charNameInput.value || 'Character Name';
-    document.getElementById('displayClassSheet').textContent = charClassSelect.value;
-    document.getElementById('displayRaceSheet').textContent = charRaceSelect.value;
-    document.getElementById('displayLevelSheet').textContent = characterLevelInput.value;
-    document.getElementById('displayProficiencyBonusSheet').textContent = getProficiencyBonus();
-    document.getElementById('characterHpSheet').value = hpInput.value;
-    document.getElementById('displayAcSheet').textContent = acInput.value;
-    document.getElementById('displayInitiativeSheet').textContent = initiativeInput.value || '+0';
-    syncInventory();
-    syncAbilities();
-    syncFeats();
-    syncActions();
-    syncNotes();
+    
+    // Update skills
+    statBlock.querySelectorAll('.stat-skills .skill-row').forEach(row => {
+      const select = row.querySelector('.skill-select');
+      const modSpan = row.querySelector('.skill-modifier');
+      if (select && modSpan) {
+        let skillMod = modifier;
+        switch(select.value) {
+          case 'half': skillMod += Math.floor(profBonus / 2); break;
+          case 'proficient': skillMod += profBonus; break;
+          case 'expertise': skillMod += profBonus * 2; break;
+        }
+        modSpan.textContent = formatModifier(skillMod);
+      }
+    });
+  }
+}
+
+// Abilities Manager
+class AbilitiesManager {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    document.getElementById('addAbility').addEventListener('click', () => this.addAbility());
+    elements.newAbilityName.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.addAbility();
+    });
+  }
+
+  addAbility() {
+    const name = elements.newAbilityName.value.trim();
+    const desc = elements.newAbilityDesc.value.trim();
+    
+    if (!name) {
+      alert('Ability name is required.');
+      return;
+    }
+    const li = document.createElement('li');
+    li.className = 'ability-item';
+    li.innerHTML = `
+      <div class="ability-name">${name}</div>
+      <div class="ability-desc">${desc || 'No description'}</div>
+      <button class="delete-ability">Delete</button>
+    `;
+    
+    li.dataset.abilityName = name;
+    li.dataset.abilityDesc = desc;
+
+    li.querySelector('.delete-ability').addEventListener('click', () => {
+      li.remove();
+    });
+
+    elements.abilitiesList.appendChild(li);
+    elements.newAbilityName.value = '';
+    elements.newAbilityDesc.value = '';
+  }
+}
+
+// Feats Manager
+class FeatsManager {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    document.getElementById('addFeat').addEventListener('click', () => this.addFeat());
+    elements.newFeatName.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.addFeat();
+    });
+  }
+
+  addFeat() {
+    const name = elements.newFeatName.value.trim();
+    const desc = elements.newFeatDesc.value.trim();
+    
+    if (!name) {
+      alert('Feat name is required.');
+      return;
+    }
+
+    const li = document.createElement('li');
+    li.className = 'feat-item';
+    li.innerHTML = `
+      <div class="feat-name">${name}</div>
+      <div class="feat-desc">${desc || 'No description'}</div>
+      <button class="delete-feat">Delete</button>
+    `;
+    
+    li.dataset.featName = name;
+    li.dataset.featDesc = desc;
+
+    li.querySelector('.delete-feat').addEventListener('click', () => {
+      li.remove();
+    });
+
+    elements.featsList.appendChild(li);
+    elements.newFeatName.value = '';
+    elements.newFeatDesc.value = '';
+  }
+}
+
+// Actions Manager
+class ActionsManager {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    document.getElementById('addAction').addEventListener('click', () => this.addAction());
+    elements.newActionName.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.addAction();
+    });
+
+    // Show/hide weapon inputs based on action type
+    elements.actionType.addEventListener('change', () => {
+      document.getElementById('weaponInputs').style.display = 
+        elements.actionType.value === 'Weapon' ? 'block' : 'none';
+    });
+  }
+
+  addAction() {
+    const name = elements.newActionName.value.trim();
+    const desc = elements.newActionDesc.value.trim();
+    const type = elements.actionType.value;
+    const charges = parseInt(elements.actionCharges.value) || 0;
+    
+    if (!name) {
+      alert('Action name is required.');
+      return;
+    }
+    if (!type) {
+      alert('Please select an action type.');
+      return;
+    }
+
+    const li = document.createElement('li');
+    li.className = 'action-item';
+    li.dataset.actionName = name;
+    li.dataset.actionDesc = desc;
+    li.dataset.actionType = type;
+    li.dataset.actionCharges = charges;
+    
+    let actionHTML = `
+      <div class="action-header">
+        <span class="action-name">${name}</span>
+        <span class="action-type">(${type})</span>
+        <button class="delete-action">×</button>
+      </div>
+      <div class="action-desc">${desc || 'No description provided'}</div>
+    `;
+
+    if (charges > 0) {
+      actionHTML += `<div class="charges-container">`;
+      for (let i = 0; i < charges; i++) {
+        actionHTML += `
+          <label class="charge-box">
+            <input type="checkbox">
+            <span>Charge ${i+1}</span>
+          </label>
+        `;
+      }
+      actionHTML += `</div>`;
+    }
+
+    li.innerHTML = actionHTML;
+    li.querySelector('.delete-action').addEventListener('click', () => {
+      li.remove();
+    });
+
+    elements.actionsList.appendChild(li);
+    this.clearForm();
+  }
+
+  clearForm() {
+    elements.newActionName.value = '';
+    elements.newActionDesc.value = '';
+    elements.actionType.value = '';
+    elements.actionCharges.value = '0';
+    document.getElementById('weaponInputs').style.display = 'none';
+  }
+}
+
+// Inventory Manager
+class InventoryManager {
+  constructor() {
+    this.currentEditItem = null;
+    this.init();
+  }
+  attachItemEventListeners(itemElement) {
+    // Edit button
+    itemElement.querySelector('.edit-item').addEventListener('click', () => {
+      this.openEditModal(itemElement);
+    });
+    
+    // Delete button
+    itemElement.querySelector('.delete-item').addEventListener('click', () => {
+      itemElement.remove();
+    });
+  };
+  init() {
+    document.getElementById('addItem').addEventListener('click', () => this.addItem());
+    elements.newItem.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.addItem();
+    });
+
+    // Properly bind modal button handlers
+    document.getElementById('saveItemChanges').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.saveItemChanges();
+      this.closeEditModal(); // Explicit close
+    });
+
+    document.getElementById('deleteItem').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.deleteCurrentItem();
+      this.closeEditModal(); // Explicit close
+    });
+
+    document.getElementById('cancelEdit').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.closeEditModal();
+    });
+
+    // Close when clicking outside modal
+    window.addEventListener('click', (e) => {
+      if (e.target === elements.editItemModal) {
+        this.closeEditModal();
+      }
+    });
   }
 
 
+  addItem() {
+    const name = elements.newItem.value.trim();
+    const type = elements.newItemType.value.trim();
+    const toHit = elements.newToHit.value.trim();
+    const damage = elements.newDamage.value.trim();
+    const charges = parseInt(elements.newCharges.value) || 0;
+    
+    if (!name) {
+      alert('Item name is required.');
+      return;
+    }
+  
+    const li = document.createElement('li');
+    li.className = 'inventory-item';
+    li.innerHTML = this.createItemHTML(name, type, toHit, damage, charges);
+    
+    // Store data as attributes
+    li.dataset.name = name;
+    li.dataset.type = type;
+    li.dataset.toHit = toHit;
+    li.dataset.damage = damage;
+    li.dataset.charges = charges;
+    
+    // Attach event listeners using the helper method
+    this.attachItemEventListeners(li);
+  
+    elements.inventoryList.appendChild(li);
+    this.clearForm();
+  }
 
+  createItemHTML(name, type, toHit, damage, charges) {
+    return `
+      <div class="inventory-item-content">
+        <div class="inventory-item-name">${name}</div>
+        <div class="inventory-item-type">${type || 'No type specified'}</div>
+        <div class="inventory-item-stats">
+          ${toHit ? `<span>To Hit: ${toHit}</span>` : ''}
+          ${damage ? `<span>Damage: ${damage}</span>` : ''}
+          ${charges > 0 ? `<span>Charges: ${charges}</span>` : ''}
+        </div>
+        <div class="inventory-item-actions">
+          <button class="edit-item">Edit</button>
+          <button class="delete-item">Delete</button>
+        </div>
+      </div>
+    `;
+  }
 
-// Character Save, Load, and Delete Logic
-//============================================================================//
-// Save a new character
-function saveCharacter() {
-    const newCharacter = {
-      name: charNameInput.value,
-      class: charClassSelect.value,
-      race: charRaceSelect.value,
-      level: characterLevelInput.value,
-      hp: hpInput.value,
-      ac: acInput.value,
-      initiative: initiativeInput.value,
+  openEditModal(itemElement) {
+    itemElement.classList.add('editing');
+    this.currentEditItem = itemElement;
+    elements.editItemName.value = itemElement.dataset.name;
+    elements.editItemType.value = itemElement.dataset.type;
+    elements.editToHit.value = itemElement.dataset.toHit;
+    elements.editDamage.value = itemElement.dataset.damage;
+    elements.editCharges.value = itemElement.dataset.charges;
+    elements.editItemModal.style.display = 'block';
+  }
+
+  saveItemChanges() {
+    if (!this.currentEditItem) return;
+    
+    const name = elements.editItemName.value.trim();
+    const type = elements.editItemType.value.trim();
+    const toHit = elements.editToHit.value.trim();
+    const damage = elements.editDamage.value.trim();
+    const charges = parseInt(elements.editCharges.value) || 0;
+    
+    if (!name) {
+      alert('Item name is required.');
+      return;
+    }
+    
+    // Update the item data
+    this.currentEditItem.dataset.name = name;
+    this.currentEditItem.dataset.type = type;
+    this.currentEditItem.dataset.toHit = toHit;
+    this.currentEditItem.dataset.damage = damage;
+    this.currentEditItem.dataset.charges = charges;
+    
+    // Update the displayed item
+    this.currentEditItem.innerHTML = this.createItemHTML(name, type, toHit, damage, charges);
+    
+    // Reattach event listeners
+    this.currentEditItem.querySelector('.edit-item').addEventListener('click', () => {
+      this.openEditModal(this.currentEditItem);
+    });
+    
+    this.currentEditItem.querySelector('.delete-item').addEventListener('click', () => {
+      this.currentEditItem.remove();
+    });
+    
+    this.attachItemEventListeners(this.currentEditItem);  // <-- Add this line
+  
+    this.closeEditModal();
+  }
+
+  deleteCurrentItem() {
+    if (this.currentEditItem) {
+      this.currentEditItem.remove();
+      this.closeEditModal();
+    }
+  }
+
+  closeEditModal() {
+    // Clear any editing state
+    if (this.currentEditItem) {
+      this.currentEditItem.classList.remove('editing');
+    }
+    
+    // Hide the modal
+    elements.editItemModal.style.display = 'none';
+    this.currentEditItem = null;
+    
+    // Optional: reset form fields
+    elements.editItemName.value = '';
+    elements.editItemType.value = '';
+    elements.editToHit.value = '';
+    elements.editDamage.value = '';
+    elements.editCharges.value = '';
+  }
+
+  // Updated openEditModal method
+  openEditModal(itemElement) {
+    // Set current item
+    this.currentEditItem = itemElement;
+    itemElement.classList.add('editing');
+    
+    // Fill form
+    elements.editItemName.value = itemElement.dataset.name || '';
+    elements.editItemType.value = itemElement.dataset.type || '';
+    elements.editToHit.value = itemElement.dataset.toHit || '';
+    elements.editDamage.value = itemElement.dataset.damage || '';
+    elements.editCharges.value = itemElement.dataset.charges || '';
+    
+    // Show modal
+    elements.editItemModal.style.display = 'block';
+  }
+}
+
+// Character Manager
+class CharacterManager {
+  constructor() {
+    if (!localStorage.getItem('characters')) {
+      localStorage.setItem('characters', JSON.stringify([]));
+    }
+    this.init();
+  }
+
+  init() {
+    // Load any saved characters
+    this.loadCharacterList();
+    
+    // Set up event listeners
+    elements.saveCharacter.addEventListener('click', () => this.saveCharacter());
+    elements.loadSelectedCharacter.addEventListener('click', () => this.loadCharacter());
+    elements.deleteCharacter.addEventListener('click', () => this.deleteCharacter());
+  }
+
+  saveCharacter() {
+    const characterData = {
+      // Basic Info
+      name: elements.charName.value,
+      class: elements.charClass.value,
+      race: elements.charRace.value,
+      level: elements.characterLevel.value,
+      hp: elements.hp.value,
+      ac: elements.ac.value,
+      initiative: elements.initiative.value,
+      
+      // Stats
       stats: {
-        strength: strengthInput.value,
-        dexterity: dexterityInput.value,
-        constitution: constitutionInput.value,
-        intelligence: intelligenceInput.value,
-        wisdom: wisdomInput.value,
-        charisma: charismaInput.value,
+        strength: elements.strength.value,
+        dexterity: elements.dexterity.value,
+        constitution: elements.constitution.value,
+        intelligence: elements.intelligence.value,
+        wisdom: elements.wisdom.value,
+        charisma: elements.charisma.value
       },
-      abilities: Array.from(abilitiesList.children).map(li => li.textContent),
-      feats: Array.from(featsList.children).map(li => li.textContent),
-      actions: Array.from(actionsList.children).map(li => li.textContent),
-      inventory: Array.from(inventoryList.children).map(li => li.textContent),
-      notes: characterNotesInput.value,
+      
+      // Abilities
+      abilities: Array.from(elements.abilitiesList.children).map(li => ({
+        name: li.dataset.abilityName,
+        description: li.dataset.abilityDesc
+      })),
+      
+      // Feats
+      feats: Array.from(elements.featsList.children).map(li => ({
+        name: li.dataset.featName,
+        description: li.dataset.featDesc
+      })),
+      
+      // Actions
+      actions: Array.from(elements.actionsList.children).map(li => ({
+        name: li.dataset.actionName,
+        description: li.dataset.actionDesc,
+        type: li.dataset.actionType,
+        charges: li.dataset.actionCharges
+      })),
+      
+      // Inventory
+      inventory: Array.from(elements.inventoryList.children).map(li => ({
+        name: li.dataset.name,
+        type: li.dataset.type,
+        toHit: li.dataset.toHit,
+        damage: li.dataset.damage,
+        charges: li.dataset.charges
+      })),
+      
+      // Notes
+      notes: elements.characterNotes.value
     };
-  
-    characterList.push(newCharacter);
+
+    // Check if character already exists
+    const existingIndex = characterList.findIndex(char => char.name === characterData.name);
+    
+    if (existingIndex >= 0) {
+      // Update existing character
+      characterList[existingIndex] = characterData;
+    } else {
+      // Add new character
+      characterList.push(characterData);
+    }
+
+    // Save to localStorage
     localStorage.setItem('characters', JSON.stringify(characterList));
-    updateCharacterDropdown();
+    this.updateCharacterDropdown();
     alert('Character saved successfully!');
   }
-  
-  // Load the selected character
-  function loadSelectedCharacter() {
-    const selectedIndex = characterDropdown.value;
-    if (selectedIndex === "") return alert('Please select a character to load.');
-  
+
+  loadCharacter() {
+    const selectedIndex = elements.characterList.selectedIndex - 1; // Account for default option
+    if (selectedIndex < 0 || selectedIndex >= characterList.length) {
+      alert('Please select a valid character to load.');
+      return;
+    }
+
     const character = characterList[selectedIndex];
   
-    charNameInput.value = character.name;
-    charClassSelect.value = character.class;
-    charRaceSelect.value = character.race;
-    characterLevelInput.value = character.level;
-    hpInput.value = character.hp;
-    acInput.value = character.ac;
-    initiativeInput.value = character.initiative;
-  
-    abilitiesList.innerHTML = '';
+    // Load basic info
+    elements.charName.value = character.name || '';
+    elements.charClass.value = character.class || '';
+    elements.charRace.value = character.race || '';
+    elements.characterLevel.value = character.level || '';
+    elements.hp.value = character.hp || '';
+    elements.ac.value = character.ac || '';
+    elements.initiative.value = character.initiative || '';
+
+    // Load stats
+    elements.strength.value = character.stats.strength || '10';
+    elements.dexterity.value = character.stats.dexterity || '10';
+    elements.constitution.value = character.stats.constitution || '10';
+    elements.intelligence.value = character.stats.intelligence || '10';
+    elements.wisdom.value = character.stats.wisdom || '10';
+    elements.charisma.value = character.stats.charisma || '10';
+
+    // Load abilities
+    elements.abilitiesList.innerHTML = '';
     character.abilities.forEach(ability => {
       const li = document.createElement('li');
-      li.textContent = ability;
-      abilitiesList.appendChild(li);
+      li.className = 'ability-item';
+      li.innerHTML = `
+        <div class="ability-name">${ability.name}</div>
+        <div class="ability-desc">${ability.description || 'No description'}</div>
+        <button class="delete-ability">Delete</button>
+      `;
+      li.dataset.abilityName = ability.name;
+      li.dataset.abilityDesc = ability.description;
+      elements.abilitiesList.appendChild(li);
     });
-  
-    featsList.innerHTML = '';
+
+    // Load feats
+    elements.featsList.innerHTML = '';
     character.feats.forEach(feat => {
       const li = document.createElement('li');
-      li.textContent = feat;
-      featsList.appendChild(li);
+      li.className = 'feat-item';
+      li.innerHTML = `
+        <div class="feat-name">${feat.name}</div>
+        <div class="feat-desc">${feat.description || 'No description'}</div>
+        <button class="delete-feat">Delete</button>
+      `;
+      li.dataset.featName = feat.name;
+      li.dataset.featDesc = feat.description;
+      elements.featsList.appendChild(li);
     });
-  
-    actionsList.innerHTML = '';
+
+    // Load actions
+    elements.actionsList.innerHTML = '';
     character.actions.forEach(action => {
       const li = document.createElement('li');
-      li.textContent = action;
-      actionsList.appendChild(li);
+      li.className = 'action-item';
+      li.dataset.actionName = action.name;
+      li.dataset.actionDesc = action.description;
+      li.dataset.actionType = action.type;
+      li.dataset.actionCharges = action.charges;
+      
+      let actionHTML = `
+        <div class="action-header">
+          <span class="action-name">${action.name}</span>
+          <span class="action-type">(${action.type})</span>
+          <button class="delete-action">×</button>
+        </div>
+        <div class="action-desc">${action.description || 'No description provided'}</div>
+      `;
+
+      const charges = parseInt(action.charges) || 0;
+      if (charges > 0) {
+        actionHTML += `<div class="charges-container">`;
+        for (let i = 0; i < charges; i++) {
+          actionHTML += `
+            <label class="charge-box">
+              <input type="checkbox">
+              <span>Charge ${i+1}</span>
+            </label>
+          `;
+        }
+        actionHTML += `</div>`;
+      }
+
+      li.innerHTML = actionHTML;
+      elements.actionsList.appendChild(li);
     });
-  
-    inventoryList.innerHTML = '';
+
+    // Load inventory
+    elements.inventoryList.innerHTML = '';
     character.inventory.forEach(item => {
       const li = document.createElement('li');
-      li.textContent = item;
-      inventoryList.appendChild(li);
+      li.className = 'inventory-item';
+      li.innerHTML = `
+        <div class="inventory-item-content">
+          <div class="inventory-item-name">${item.name}</div>
+          <div class="inventory-item-type">${item.type || 'No type specified'}</div>
+          <div class="inventory-item-stats">
+            ${item.toHit ? `<span>To Hit: ${item.toHit}</span>` : ''}
+            ${item.damage ? `<span>Damage: ${item.damage}</span>` : ''}
+            ${item.charges > 0 ? `<span>Charges: ${item.charges}</span>` : ''}
+          </div>
+          <div class="inventory-item-actions">
+            <button class="edit-item">Edit</button>
+            <button class="delete-item">Delete</button>
+          </div>
+        </div>
+      `;
+      li.dataset.name = item.name;
+      li.dataset.type = item.type;
+      li.dataset.toHit = item.toHit;
+      li.dataset.damage = item.damage;
+      li.dataset.charges = item.charges;
+      elements.inventoryList.appendChild(li);
     });
-  
-    characterNotesInput.value = character.notes;
+
+    // Load notes
+    elements.characterNotes.value = character.notes || '';
+
+    // Update all modifiers
+    skillsManager.updateAllModifiers();
     alert('Character loaded successfully!');
   }
-  
-  // Delete the selected character
-  function deleteCharacter() {
-    const selectedIndex = characterDropdown.value;
-    if (selectedIndex === "") return alert('Please select a character to delete.');
-  
-    characterList.splice(selectedIndex, 1);
-    localStorage.setItem('characters', JSON.stringify(characterList));
-    updateCharacterDropdown();
-    alert('Character deleted successfully!');
+
+  deleteCharacter() {
+    const selectedIndex = elements.characterList.selectedIndex - 1;
+    if (selectedIndex < 0 || selectedIndex >= characterList.length) {
+      alert('Please select a character to delete.');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this character?')) {
+      characterList.splice(selectedIndex, 1);
+      localStorage.setItem('characters', JSON.stringify(characterList));
+      this.updateCharacterDropdown();
+      alert('Character deleted successfully!');
+    }
   }
-  
-  // Update the character dropdown with saved characters
-  function updateCharacterDropdown() {
-    characterDropdown.innerHTML = '<option value="">-- Select a character --</option>';
+
+  loadCharacterList() {
+    const savedCharacters = localStorage.getItem('characters');
+    if (savedCharacters) {
+      characterList = JSON.parse(savedCharacters);
+      this.updateCharacterDropdown();
+    }
+  }
+
+  updateCharacterDropdown() {
+    elements.characterList.innerHTML = '<option value="">-- Select a character --</option>';
     characterList.forEach((character, index) => {
       const option = document.createElement('option');
       option.value = index;
-      option.textContent = character.name || `Character ${index + 1}`;
-      characterDropdown.appendChild(option);
+      option.textContent = character.name || `Unnamed Character ${index + 1}`;
+      elements.characterList.appendChild(option);
     });
   }
-  
-  // Initialize the character dropdown on page load
-  document.addEventListener('DOMContentLoaded', updateCharacterDropdown);
-  
-  // Attach event listeners to buttons
-  saveCharacterButton.addEventListener('click', saveCharacter);
-  loadSelectedCharacterButton.addEventListener('click', loadSelectedCharacter);
-  deleteCharacterButton.addEventListener('click', deleteCharacter);
+}
+
+// Declare managers globally (but initialize them inside DOMContentLoaded)
+let skillsManager, abilitiesManager, featsManager, actionsManager, inventoryManager, characterManager;
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default values for stats
+  ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].forEach(stat => {
+    if (elements[stat] && !elements[stat].value) elements[stat].value = '10';
+  });
+
+  // Initialize proficiency selects
+  document.querySelectorAll('.saving-throw-select, .skill-select').forEach(select => {
+    if (!select.value) select.value = 'none';
+  });
+
+  // Initialize all managers
+  skillsManager = new SkillsManager();
+  abilitiesManager = new AbilitiesManager();
+  featsManager = new FeatsManager();
+  actionsManager = new ActionsManager();
+  inventoryManager = new InventoryManager();
+  characterManager = new CharacterManager();
+
+  // Then load characters
+  characterManager.loadCharacterList();
+});
