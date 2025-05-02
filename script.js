@@ -523,29 +523,26 @@ class CharacterManager {
     elements.deleteCharacter.addEventListener('click', () => this.deleteCharacter());
   }
 
-  saveCharacter() {
-    const characterName = elements.charName.value.trim();
-  
-    if (!characterName) {
+  aveCharacter() {
+    // 1. Validate required fields
+    const charName = elements.charName.value.trim();
+    if (!charName) {
       alert("Character name is required!");
       return;
     }
   
-    // Confirmation prompt
-    const shouldSave = confirm(`Save character "${characterName}"?`);
-    if (!shouldSave) return; // Exit if user cancels
+    // 2. Confirmation prompt
+    if (!confirm(`Save "${charName}"?`)) return;
   
-    // Proceed with saving
+    // 3. Build character data
     const characterData = {
-      name: characterName,
+      name: charName,
       class: elements.charClass.value,
       race: elements.charRace.value,
       level: elements.characterLevel.value,
       hp: elements.hp.value,
       ac: elements.ac.value,
       initiative: elements.initiative.value,
-      
-      // Stats
       stats: {
         strength: elements.strength.value,
         dexterity: elements.dexterity.value,
@@ -554,28 +551,20 @@ class CharacterManager {
         wisdom: elements.wisdom.value,
         charisma: elements.charisma.value
       },
-      
-      // Abilities
       abilities: Array.from(elements.abilitiesList.children).map(li => ({
         name: li.dataset.abilityName,
         description: li.dataset.abilityDesc
       })),
-      
-      // Feats
       feats: Array.from(elements.featsList.children).map(li => ({
         name: li.dataset.featName,
         description: li.dataset.featDesc
       })),
-      
-      // Actions
       actions: Array.from(elements.actionsList.children).map(li => ({
         name: li.dataset.actionName,
         description: li.dataset.actionDesc,
         type: li.dataset.actionType,
         charges: li.dataset.actionCharges
       })),
-      
-      // Inventory
       inventory: Array.from(elements.inventoryList.children).map(li => ({
         name: li.dataset.name,
         type: li.dataset.type,
@@ -583,23 +572,25 @@ class CharacterManager {
         damage: li.dataset.damage,
         charges: li.dataset.charges
       })),
-      
-      // Notes
       notes: elements.characterNotes.value
     };
-
-    // Update character list
-      const existingIndex = characterList.findIndex(char => char.name === characterData.name);
-        if (existingIndex >= 0) {
-        characterList[existingIndex] = characterData;
-      } else {
-      characterList.push(characterData);
+  
+    // 4. Load existing data
+    const savedCharacters = JSON.parse(localStorage.getItem('characters') || '[]');
+    let characterList = Array.isArray(savedCharacters) ? savedCharacters : [];
+  
+    // 5. Update or add character
+    const index = characterList.findIndex(c => c.name === charName);
+    if (index >= 0) {
+      characterList[index] = characterData; // Update existing
+    } else {
+      characterList.push(characterData); // Add new
     }
-
-    // Save to localStorage
+  
+    // 6. Save to localStorage
     localStorage.setItem('characters', JSON.stringify(characterList));
     this.updateCharacterDropdown();
-    alert(`"${characterName}" saved successfully!`); // Success feedback
+    alert(`"${charName}" saved successfully!`);
   }
 
   loadCharacter() {
