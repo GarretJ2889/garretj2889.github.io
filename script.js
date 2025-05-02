@@ -589,32 +589,68 @@ class CharacterManager {
     return element.value ?? defaultValue;
   }
 
+  collectListData(listElement, nameKey, descKey, additionalKeys = []) {
+    if (!listElement || !listElement.children) return [];
+    
+    return Array.from(listElement.children).map(li => {
+      const itemData = {
+        name: li.dataset[nameKey] || '',
+        description: li.dataset[descKey] || ''
+      };
+      
+      // Add additional properties if they exist
+      additionalKeys.forEach(key => {
+        itemData[key] = li.dataset[key] || '';
+      });
+      
+      return itemData;
+    });
+  }
+
   buildCharacterData(charName) {
     try {
       return {
         name: charName,
-        class: this.safeGetValue(elements.charClass),
-        race: this.safeGetValue(elements.charRace),
-        level: this.safeGetValue(elements.characterLevel),
-        hp: this.safeGetValue(elements.hp),
-        ac: this.safeGetValue(elements.ac),
-        initiative: this.safeGetValue(elements.initiative),
+        class: this.getSafeValue(elements.charClass),
+        race: this.getSafeValue(elements.charRace),
+        level: this.getSafeValue(elements.characterLevel),
+        hp: this.getSafeValue(elements.hp),
+        ac: this.getSafeValue(elements.ac),
+        initiative: this.getSafeValue(elements.initiative),
         stats: {
-          strength: this.safeGetValue(elements.strength, '10'),
-          dexterity: this.safeGetValue(elements.dexterity, '10'),
-          constitution: this.safeGetValue(elements.constitution, '10'),
-          intelligence: this.safeGetValue(elements.intelligence, '10'),
-          wisdom: this.safeGetValue(elements.wisdom, '10'),
-          charisma: this.safeGetValue(elements.charisma, '10')
+          strength: this.getSafeValue(elements.strength, '10'),
+          dexterity: this.getSafeValue(elements.dexterity, '10'),
+          constitution: this.getSafeValue(elements.constitution, '10'),
+          intelligence: this.getSafeValue(elements.intelligence, '10'),
+          wisdom: this.getSafeValue(elements.wisdom, '10'),
+          charisma: this.getSafeValue(elements.charisma, '10')
         },
-        abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
-        feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
-        actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
-        inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
-        notes: this.safeGetValue(elements.characterNotes)
+        abilities: this.collectListData(
+          elements.abilitiesList, 
+          'abilityName', 
+          'abilityDesc'
+        ),
+        feats: this.collectListData(
+          elements.featsList, 
+          'featName', 
+          'featDesc'
+        ),
+        actions: this.collectListData(
+          elements.actionsList, 
+          'actionName', 
+          'actionDesc', 
+          ['actionType', 'actionCharges']
+        ),
+        inventory: this.collectListData(
+          elements.inventoryList, 
+          'name', 
+          'type', 
+          ['toHit', 'damage', 'charges']
+        ),
+        notes: this.getSafeValue(elements.characterNotes)
       };
     } catch (e) {
-      console.error("Data build failed:", e);
+      console.error("Error building character data:", e);
       throw new Error("Failed to build character data");
     }
   }
@@ -622,6 +658,11 @@ class CharacterManager {
   saveCharacter() {
     try {
       console.log("Save initiated...");
+      console.log("Checking list elements before save:");
+      console.log("Abilities list:", elements.abilitiesList?.children?.length);
+      console.log("Feats list:", elements.featsList?.children?.length);
+      console.log("Actions list:", elements.actionsList?.children?.length);
+      console.log("Inventory list:", elements.inventoryList?.children?.length);
       const charName = this.safeGetValue(elements.charName).trim();
       
       if (!charName) {
@@ -643,9 +684,9 @@ class CharacterManager {
       localStorage.setItem('characters', JSON.stringify(this.characterList));
       this.updateCharacterDropdown();
       alert(`"${charName}" saved!`);
+      
     } catch (error) {
       console.error("Save failed:", error);
-      alert(`Save error: ${error.message}`);
     }
   }
 
