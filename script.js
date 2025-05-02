@@ -1,5 +1,7 @@
 // DOM Elements
 const elements = {
+  characterNotes: document.getElementById('characterNotes'),
+
   // Character Info
   charName: document.getElementById('charName'),
   charClass: document.getElementById('charClass'),
@@ -435,13 +437,18 @@ class InventoryManager {
   }
 
   openEditModal(itemElement) {
-    itemElement.classList.add('editing');
+    // Set current item
     this.currentEditItem = itemElement;
-    elements.editItemName.value = itemElement.dataset.name;
-    elements.editItemType.value = itemElement.dataset.type;
-    elements.editToHit.value = itemElement.dataset.toHit;
-    elements.editDamage.value = itemElement.dataset.damage;
-    elements.editCharges.value = itemElement.dataset.charges;
+    itemElement.classList.add('editing');
+    
+    // Fill form
+    elements.editItemName.value = itemElement.dataset.name || '';
+    elements.editItemType.value = itemElement.dataset.type || '';
+    elements.editToHit.value = itemElement.dataset.toHit || '';
+    elements.editDamage.value = itemElement.dataset.damage || '';
+    elements.editCharges.value = itemElement.dataset.charges || '';
+    
+    // Show modal
     elements.editItemModal.style.display = 'block';
   }
 
@@ -506,23 +513,6 @@ class InventoryManager {
     elements.editToHit.value = '';
     elements.editDamage.value = '';
     elements.editCharges.value = '';
-  }
-
-  // Updated openEditModal method
-  openEditModal(itemElement) {
-    // Set current item
-    this.currentEditItem = itemElement;
-    itemElement.classList.add('editing');
-    
-    // Fill form
-    elements.editItemName.value = itemElement.dataset.name || '';
-    elements.editItemType.value = itemElement.dataset.type || '';
-    elements.editToHit.value = itemElement.dataset.toHit || '';
-    elements.editDamage.value = itemElement.dataset.damage || '';
-    elements.editCharges.value = itemElement.dataset.charges || '';
-    
-    // Show modal
-    elements.editItemModal.style.display = 'block';
   }
 }
 
@@ -733,7 +723,7 @@ class CharacterManager {
     if (!listElement) return;
     listElement.innerHTML = '';
     if (!items || !Array.isArray(items)) return;
-
+  
     items.forEach(item => {
       const li = document.createElement('li');
       li.className = `${type}-item`;
@@ -742,17 +732,27 @@ class CharacterManager {
       Object.entries(item).forEach(([key, value]) => {
         li.dataset[key] = value;
       });
-
-      // Create appropriate HTML based on type
-      if (type === 'ability' || type === 'feat') {
-        li.innerHTML = `
-          <div class="${type}-name">${item.name}</div>
-          <div class="${type}-desc">${item.description || 'No description'}</div>
-          <button class="delete-${type}">Delete</button>
-        `;
-      } 
-      // Add other type cases as needed...
-
+  
+      switch(type) {
+        case 'ability':
+        case 'feat':
+          li.innerHTML = `
+            <div class="${type}-name">${item.name}</div>
+            <div class="${type}-desc">${item.description || 'No description'}</div>
+            <button class="delete-${type}">Delete</button>
+          `;
+          li.querySelector(`.delete-${type}`).addEventListener('click', () => li.remove());
+          break;
+          
+        case 'action':
+          // Add action-specific HTML and event listeners
+          break;
+          
+        case 'inventory':
+          // Add inventory-specific HTML and event listeners
+          break;
+      }
+  
       listElement.appendChild(li);
     });
   }
@@ -790,13 +790,13 @@ class CharacterManager {
     });
   }
 
-  getSafeValue(element, defaultValue = '') {
-    if (!element) {
-      console.warn('Missing element, using default value');
-      return defaultValue;
-    }
-    return element.value !== undefined ? element.value : defaultValue;
+// Replace both methods with:
+getSafeValue(element, defaultValue = '') {
+  if (!element) {
+    console.warn(`Attempted to read missing element, using default: ${defaultValue}`);
+    return defaultValue;
   }
+  return element.value ?? defaultValue;
 }
 
 // Declare managers globally
