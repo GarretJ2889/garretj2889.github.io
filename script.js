@@ -507,36 +507,60 @@ class InventoryManager {
 // Character Manager
 class CharacterManager {
   constructor() {
+    // Initialize character list from localStorage
     if (!localStorage.getItem('characters')) {
       localStorage.setItem('characters', JSON.stringify([]));
     }
     this.characterList = JSON.parse(localStorage.getItem('characters')) || [];
+    
+    // Bind methods to maintain proper 'this' context
+    this.saveCharacter = this.saveCharacter.bind(this);
+    this.loadCharacter = this.loadCharacter.bind(this);
+    this.deleteCharacter = this.deleteCharacter.bind(this);
+    
     this.init();
   }
 
   init() {
-    this.loadCharacterList();
+    // Debug: Verify buttons exist in DOM
+    console.log('Initializing CharacterManager...');
+    console.log('Save button:', elements.saveCharacter);
+    console.log('Load button:', elements.loadSelectedCharacter);
+    console.log('Delete button:', elements.deleteCharacter);
+
+    // Remove any existing listeners to prevent duplicates
+    elements.saveCharacter.removeEventListener('click', this.saveCharacter);
+    elements.loadSelectedCharacter.removeEventListener('click', this.loadCharacter);
+    elements.deleteCharacter.removeEventListener('click', this.deleteCharacter);
     
-    // Updated event listeners
+    // Add robust event listeners
     elements.saveCharacter.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      console.log('Save button clicked - event triggered');
       this.saveCharacter();
     });
     
     elements.loadSelectedCharacter.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      console.log('Load button clicked - event triggered');
       this.loadCharacter();
     });
     
     elements.deleteCharacter.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      console.log('Delete button clicked - event triggered');
       this.deleteCharacter();
     });
   }
 
   saveCharacter() {
     try {
+      console.log('SaveCharacter method executing...');
       const charName = elements.charName.value.trim();
+      
       if (!charName) {
         alert("Character name is required!");
         return;
@@ -544,8 +568,46 @@ class CharacterManager {
 
       if (!confirm(`Save character "${charName}"?`)) return;
 
-      const characterData = this.buildCharacterData(charName);
-      
+      const characterData = {
+        name: charName,
+        class: elements.charClass.value,
+        race: elements.charRace.value,
+        level: elements.characterLevel.value,
+        hp: elements.hp.value,
+        ac: elements.ac.value,
+        initiative: elements.initiative.value,
+        stats: {
+          strength: elements.strength.value,
+          dexterity: elements.dexterity.value,
+          constitution: elements.constitution.value,
+          intelligence: elements.intelligence.value,
+          wisdom: elements.wisdom.value,
+          charisma: elements.charisma.value
+        },
+        abilities: Array.from(elements.abilitiesList.children).map(li => ({
+          name: li.dataset.abilityName,
+          description: li.dataset.abilityDesc
+        })),
+        feats: Array.from(elements.featsList.children).map(li => ({
+          name: li.dataset.featName,
+          description: li.dataset.featDesc
+        })),
+        actions: Array.from(elements.actionsList.children).map(li => ({
+          name: li.dataset.actionName,
+          description: li.dataset.actionDesc,
+          type: li.dataset.actionType,
+          charges: li.dataset.actionCharges
+        })),
+        inventory: Array.from(elements.inventoryList.children).map(li => ({
+          name: li.dataset.name,
+          type: li.dataset.type,
+          toHit: li.dataset.toHit,
+          damage: li.dataset.damage,
+          charges: li.dataset.charges
+        })),
+        notes: elements.characterNotes.value
+      };
+
       const existingIndex = this.characterList.findIndex(c => c.name === charName);
       if (existingIndex >= 0) {
         this.characterList[existingIndex] = characterData;
@@ -557,49 +619,9 @@ class CharacterManager {
       this.updateCharacterDropdown();
       alert(`"${charName}" saved successfully!`);
     } catch (error) {
-      console.error("Save error:", error);
-      alert("Failed to save character. Check console for details.");
+      console.error('Save error:', error);
+      alert('Failed to save character. Check console for details.');
     }
-  }
-
-  buildCharacterData(charName) {
-    return {
-      name: charName,
-      class: elements.charClass.value,
-      race: elements.charRace.value,
-      level: elements.characterLevel.value,
-      hp: elements.hp.value,
-      ac: elements.ac.value,
-      initiative: elements.initiative.value,
-      stats: {
-        strength: elements.strength.value,
-        dexterity: elements.dexterity.value,
-        constitution: elements.constitution.value,
-        intelligence: elements.intelligence.value,
-        wisdom: elements.wisdom.value,
-        charisma: elements.charisma.value
-      },
-      abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
-      feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
-      actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
-      inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
-      notes: elements.characterNotes.value
-    };
-  }
-
-  collectListData(listElement, nameKey, descKey, additionalKeys = []) {
-    return Array.from(listElement.children).map(li => {
-      const item = {
-        name: li.dataset[nameKey],
-        description: li.dataset[descKey]
-      };
-      
-      additionalKeys.forEach(key => {
-        item[key] = li.dataset[key];
-      });
-      
-      return item;
-    });
   }
 
   loadCharacter() {
@@ -611,71 +633,68 @@ class CharacterManager {
       }
 
       const character = this.characterList[selectedIndex];
-      this.populateCharacterData(character);
       
-      skillsManager.updateAll();
+      // Basic info
+      elements.charName.value = character.name || '';
+      elements.charClass.value = character.class || '';
+      elements.charRace.value = character.race || '';
+      elements.characterLevel.value = character.level || '';
+      elements.hp.value = character.hp || '';
+      elements.ac.value = character.ac || '';
+      elements.initiative.value = character.initiative || '';
+
+      // Stats
+      elements.strength.value = character.stats?.strength || '10';
+      elements.dexterity.value = character.stats?.dexterity || '10';
+      elements.constitution.value = character.stats?.constitution || '10';
+      elements.intelligence.value = character.stats?.intelligence || '10';
+      elements.wisdom.value = character.stats?.wisdom || '10';
+      elements.charisma.value = character.stats?.charisma || '10';
+
+      // Lists
+      this.populateList(elements.abilitiesList, character.abilities, 'ability');
+      this.populateList(elements.featsList, character.feats, 'feat');
+      this.populateList(elements.actionsList, character.actions, 'action');
+      this.populateList(elements.inventoryList, character.inventory, 'inventory');
+
+      // Notes
+      elements.characterNotes.value = character.notes || '';
+
+      // Update modifiers
+      if (skillsManager && typeof skillsManager.updateAll === 'function') {
+        skillsManager.updateAll();
+      }
+      
       alert('Character loaded successfully!');
     } catch (error) {
-      console.error("Load error:", error);
-      alert("Failed to load character. Check console for details.");
+      console.error('Load error:', error);
+      alert('Failed to load character. Check console for details.');
     }
-  }
-
-  populateCharacterData(character) {
-    // Basic info
-    elements.charName.value = character.name || '';
-    elements.charClass.value = character.class || '';
-    elements.charRace.value = character.race || '';
-    elements.characterLevel.value = character.level || '';
-    elements.hp.value = character.hp || '';
-    elements.ac.value = character.ac || '';
-    elements.initiative.value = character.initiative || '';
-
-    // Stats
-    if (character.stats) {
-      elements.strength.value = character.stats.strength || '10';
-      elements.dexterity.value = character.stats.dexterity || '10';
-      elements.constitution.value = character.stats.constitution || '10';
-      elements.intelligence.value = character.stats.intelligence || '10';
-      elements.wisdom.value = character.stats.wisdom || '10';
-      elements.charisma.value = character.stats.charisma || '10';
-    }
-
-    // Lists
-    this.populateList(elements.abilitiesList, character.abilities, 'ability');
-    this.populateList(elements.featsList, character.feats, 'feat');
-    this.populateList(elements.actionsList, character.actions, 'action');
-    this.populateList(elements.inventoryList, character.inventory, 'inventory');
-
-    // Notes
-    elements.characterNotes.value = character.notes || '';
   }
 
   populateList(listElement, items, type) {
+    if (!listElement) return;
     listElement.innerHTML = '';
-    if (!items) return;
+    if (!items || !Array.isArray(items)) return;
 
     items.forEach(item => {
       const li = document.createElement('li');
       li.className = `${type}-item`;
       
-      // Set dataset attributes
-      Object.keys(item).forEach(key => {
-        li.dataset[key] = item[key];
+      // Store all data as dataset attributes
+      Object.entries(item).forEach(([key, value]) => {
+        li.dataset[key] = value;
       });
 
-      // Create HTML based on type
+      // Create appropriate HTML based on type
       if (type === 'ability' || type === 'feat') {
         li.innerHTML = `
           <div class="${type}-name">${item.name}</div>
           <div class="${type}-desc">${item.description || 'No description'}</div>
           <button class="delete-${type}">Delete</button>
         `;
-      } else if (type === 'action') {
-        // Action-specific HTML
-      } else if (type === 'inventory') {
-        // Inventory-specific HTML
-      }
+      } 
+      // Add other type cases as needed...
 
       listElement.appendChild(li);
     });
@@ -689,32 +708,22 @@ class CharacterManager {
         return;
       }
 
-      if (confirm('Are you sure you want to delete this character?')) {
-        this.characterList.splice(selectedIndex, 1);
-        localStorage.setItem('characters', JSON.stringify(this.characterList));
-        this.updateCharacterDropdown();
-        alert('Character deleted successfully!');
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-      alert("Failed to delete character. Check console for details.");
-    }
-  }
+      const charName = this.characterList[selectedIndex].name;
+      if (!confirm(`Are you sure you want to delete "${charName}"?`)) return;
 
-  loadCharacterList() {
-    try {
-      const savedCharacters = localStorage.getItem('characters');
-      if (savedCharacters) {
-        this.characterList = JSON.parse(savedCharacters);
-        this.updateCharacterDropdown();
-      }
+      this.characterList.splice(selectedIndex, 1);
+      localStorage.setItem('characters', JSON.stringify(this.characterList));
+      this.updateCharacterDropdown();
+      alert('Character deleted successfully!');
     } catch (error) {
-      console.error("Load list error:", error);
-      this.characterList = [];
+      console.error('Delete error:', error);
+      alert('Failed to delete character. Check console for details.');
     }
   }
 
   updateCharacterDropdown() {
+    if (!elements.characterList) return;
+    
     elements.characterList.innerHTML = '<option value="">-- Select a character --</option>';
     this.characterList.forEach((character, index) => {
       const option = document.createElement('option');
