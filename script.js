@@ -590,25 +590,37 @@ class CharacterManager {
   }
 
   collectListData(listElement, nameKey, descKey, additionalKeys = []) {
-    if (!listElement || !listElement.children) return [];
-    
-    return Array.from(listElement.children).map(li => {
-      const itemData = {
-        name: li.dataset[nameKey] || '',
-        description: li.dataset[descKey] || ''
-      };
+    try {
+      if (!listElement || !listElement.children) return [];
       
-      // Add additional properties if they exist
-      additionalKeys.forEach(key => {
-        itemData[key] = li.dataset[key] || '';
+      return Array.from(listElement.children).map(li => {
+        const itemData = {
+          name: li.dataset[nameKey] || '',
+          description: li.dataset[descKey] || ''
+        };
+        
+        additionalKeys.forEach(key => {
+          itemData[key] = li.dataset[key] || '';
+        });
+        
+        return itemData;
       });
-      
-      return itemData;
-    });
+    } catch (error) {
+      console.error('Error collecting list data:', error);
+      return [];
+    }
   }
 
   buildCharacterData(charName) {
     try {
+      if (!charName) throw new Error('Character name is required');
+      
+      // Debug: Check if lists exist
+      console.log('Abilities List:', elements.abilitiesList);
+      console.log('Feats List:', elements.featsList);
+      console.log('Actions List:', elements.actionsList);
+      console.log('Inventory List:', elements.inventoryList);
+  
       return {
         name: charName,
         class: this.getSafeValue(elements.charClass),
@@ -625,53 +637,32 @@ class CharacterManager {
           wisdom: this.getSafeValue(elements.wisdom, '10'),
           charisma: this.getSafeValue(elements.charisma, '10')
         },
-        abilities: this.collectListData(
-          elements.abilitiesList, 
-          'abilityName', 
-          'abilityDesc'
-        ),
-        feats: this.collectListData(
-          elements.featsList, 
-          'featName', 
-          'featDesc'
-        ),
-        actions: this.collectListData(
-          elements.actionsList, 
-          'actionName', 
-          'actionDesc', 
-          ['actionType', 'actionCharges']
-        ),
-        inventory: this.collectListData(
-          elements.inventoryList, 
-          'name', 
-          'type', 
-          ['toHit', 'damage', 'charges']
-        ),
+        abilities: this.collectListData(elements.abilitiesList, 'abilityName', 'abilityDesc'),
+        feats: this.collectListData(elements.featsList, 'featName', 'featDesc'),
+        actions: this.collectListData(elements.actionsList, 'actionName', 'actionDesc', ['actionType', 'actionCharges']),
+        inventory: this.collectListData(elements.inventoryList, 'name', 'type', ['toHit', 'damage', 'charges']),
         notes: this.getSafeValue(elements.characterNotes)
       };
-    } catch (e) {
-      console.error("Error building character data:", e);
-      throw new Error("Failed to build character data");
+    } catch (error) {
+      console.error('Error building character data:', error);
+      throw error; // Re-throw to be caught by saveCharacter
     }
   }
 
   saveCharacter() {
     try {
-      console.log("Save initiated...");
-      console.log("Checking list elements before save:");
-      console.log("Abilities list:", elements.abilitiesList?.children?.length);
-      console.log("Feats list:", elements.featsList?.children?.length);
-      console.log("Actions list:", elements.actionsList?.children?.length);
-      console.log("Inventory list:", elements.inventoryList?.children?.length);
-      const charName = this.safeGetValue(elements.charName).trim();
+      console.log('Attempting to save character...');
       
+      const charName = this.getSafeValue(elements.charName).trim();
       if (!charName) {
-        alert("Character name is required!");
+        throw new Error('Character name is required');
+      }
+  
+      if (!confirm(`Save character "${charName}"?`)) {
+        console.log('Save cancelled by user');
         return;
       }
-
-      if (!confirm(`Save "${charName}"?`)) return;
-
+  
       const characterData = this.buildCharacterData(charName);
       const existingIndex = this.characterList.findIndex(c => c.name === charName);
       
@@ -680,13 +671,13 @@ class CharacterManager {
       } else {
         this.characterList.push(characterData);
       }
-
+  
       localStorage.setItem('characters', JSON.stringify(this.characterList));
       this.updateCharacterDropdown();
-      alert(`"${charName}" saved!`);
-      
+      alert(`"${charName}" saved successfully!`);
     } catch (error) {
-      console.error("Save failed:", error);
+      console.error('Save failed:', error);
+      alert(`Save failed: ${error.message}`);
     }
   }
 
@@ -797,6 +788,14 @@ class CharacterManager {
       option.textContent = character.name || `Unnamed Character ${index + 1}`;
       elements.characterList.appendChild(option);
     });
+  }
+
+  getSafeValue(element, defaultValue = '') {
+    if (!element) {
+      console.warn('Missing element, using default value');
+      return defaultValue;
+    }
+    return element.value !== undefined ? element.value : defaultValue;
   }
 }
 
