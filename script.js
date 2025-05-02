@@ -524,9 +524,20 @@ class CharacterManager {
   }
 
   saveCharacter() {
+    const characterName = elements.charName.value.trim();
+  
+    if (!characterName) {
+      alert("Character name is required!");
+      return;
+    }
+  
+    // Confirmation prompt
+    const shouldSave = confirm(`Save character "${characterName}"?`);
+    if (!shouldSave) return; // Exit if user cancels
+  
+    // Proceed with saving
     const characterData = {
-      // Basic Info
-      name: elements.charName.value,
+      name: characterName,
       class: elements.charClass.value,
       race: elements.charRace.value,
       level: elements.characterLevel.value,
@@ -577,21 +588,18 @@ class CharacterManager {
       notes: elements.characterNotes.value
     };
 
-    // Check if character already exists
-    const existingIndex = characterList.findIndex(char => char.name === characterData.name);
-    
-    if (existingIndex >= 0) {
-      // Update existing character
-      characterList[existingIndex] = characterData;
-    } else {
-      // Add new character
+    // Update character list
+      const existingIndex = characterList.findIndex(char => char.name === characterData.name);
+        if (existingIndex >= 0) {
+        characterList[existingIndex] = characterData;
+      } else {
       characterList.push(characterData);
     }
 
     // Save to localStorage
     localStorage.setItem('characters', JSON.stringify(characterList));
     this.updateCharacterDropdown();
-    alert('Character saved successfully!');
+    alert(`"${characterName}" saved successfully!`); // Success feedback
   }
 
   loadCharacter() {
@@ -599,6 +607,8 @@ class CharacterManager {
     if (selectedIndex < 0 || selectedIndex >= characterList.length) {
       alert('Please select a valid character to load.');
       return;
+      skillsManager.updateAll(); // Fixed: Now uses global skillsManager
+      alert('Character loaded successfully!');
     }
 
     const character = characterList[selectedIndex];
@@ -757,21 +767,11 @@ class CharacterManager {
   }
 }
 
-// Declare managers globally (but initialize them inside DOMContentLoaded)
+// Declare managers globally (but initialize later)
 let skillsManager, abilitiesManager, featsManager, actionsManager, inventoryManager, characterManager;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Set default values for stats
-  ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].forEach(stat => {
-    if (elements[stat] && !elements[stat].value) elements[stat].value = '10';
-  });
-
-  // Initialize proficiency selects
-  document.querySelectorAll('.saving-throw-select, .skill-select').forEach(select => {
-    if (!select.value) select.value = 'none';
-  });
-
-  // Initialize all managers
+  // Initialize managers
   skillsManager = new SkillsManager();
   abilitiesManager = new AbilitiesManager();
   featsManager = new FeatsManager();
@@ -779,6 +779,6 @@ document.addEventListener('DOMContentLoaded', () => {
   inventoryManager = new InventoryManager();
   characterManager = new CharacterManager();
 
-  // Then load characters
+  // Load characters
   characterManager.loadCharacterList();
 });
