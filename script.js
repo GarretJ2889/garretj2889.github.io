@@ -539,7 +539,7 @@ class CharacterManager {
 
   init() {
     if (!this.verifyCriticalElements()) return;
-    
+    this.updateCharacterDropdown();
     // Safe event binding
     this.bindEvent(elements.saveCharacter, 'click', this.saveCharacter.bind(this));
     this.bindEvent(elements.loadSelectedCharacter, 'click', this.loadCharacter.bind(this));
@@ -673,13 +673,10 @@ class CharacterManager {
 
   loadCharacter() {
     try {
-      const selectedIndex = elements.characterList.selectedIndex - 1;
-      if (selectedIndex < 0 || selectedIndex >= this.characterList.length) {
-        alert('Please select a valid character to load.');
-        return;
+      // If no selection but characters exist, load the first one
+      if (elements.characterList.selectedIndex <= 0 && this.characterList.length > 0) {
+      elements.characterList.selectedIndex = 1; // Select first character
       }
-
-      const character = this.characterList[selectedIndex];
       
       // Basic info
       elements.charName.value = character.name || '';
