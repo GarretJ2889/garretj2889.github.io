@@ -26,6 +26,12 @@ const constitutionInput = document.getElementById('constitution');
 const intelligenceInput = document.getElementById('intelligence');
 const wisdomInput = document.getElementById('wisdom');
 const charismaInput = document.getElementById('charisma');
+const strengthMod = document.getElementById('strengthMod');
+const dexterityMod = document.getElementById('dexterityMod');
+const constitutionMod = document.getElementById('constitutionMod');
+const intelligenceMod = document.getElementById('intelligenceMod');
+const wisdomMod = document.getElementById('wisdomMod');
+const charismaMod = document.getElementById('charismaMod');
 
 // Character Sheet Display Elements
 const toggleViewButton = document.getElementById('toggleViewButton');
@@ -97,6 +103,29 @@ function calculateModifier(stat) {
 
 function formatModifier(modifier) {
     return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+}
+
+function updateAllModifiers() {
+  strengthMod.textContent = formatModifier(calculateModifier(strengthInput.value));
+  dexterityMod.textContent = formatModifier(calculateModifier(dexterityInput.value));
+  constitutionMod.textContent = formatModifier(calculateModifier(constitutionInput.value));
+  intelligenceMod.textContent = formatModifier(calculateModifier(intelligenceInput.value));
+  wisdomMod.textContent = formatModifier(calculateModifier(wisdomInput.value));
+  charismaMod.textContent = formatModifier(calculateModifier(charismaInput.value));
+  updateSkillModifiers();
+}
+
+function updateSkillModifiers() {
+  skillSelects.forEach(select => {
+      const skillModElement = select.parentElement.querySelector('.skill-modifier');
+      if (skillModElement) {
+          const ability = select.getAttribute('data-ability');
+          const baseMod = calculateModifier(document.getElementById(ability).value);
+          const isProficient = select.value === 'proficient';
+          const totalMod = baseMod + (isProficient ? getProficiencyBonus() : 0);
+          skillModElement.textContent = formatModifier(totalMod);
+      }
+  });
 }
 
 function openEditModal(itemElement) {
@@ -229,16 +258,18 @@ function syncInventory() {
 }
 
 function syncSkills() {
-    skillsDisplay.innerHTML = '';
-    document.querySelectorAll('.skill-select').forEach(select => {
-        const skillName = select.previousElementSibling.textContent;
-        const ability = select.getAttribute('data-ability');
-        const abilityModifier = calculateModifier(document.getElementById(ability).value);
-    
-        const skillRow = document.createElement('div');
-        skillRow.textContent = `${skillName}: ${formatModifier(abilityModifier)}`;
-        skillsDisplay.appendChild(skillRow);
-    });
+  skillsDisplay.innerHTML = '';
+  skillSelects.forEach(select => {
+      const skillName = select.previousElementSibling.textContent;
+      const ability = select.getAttribute('data-ability');
+      const baseMod = calculateModifier(document.getElementById(ability).value);
+      const isProficient = select.value === 'proficient';
+      const totalMod = baseMod + (isProficient ? getProficiencyBonus() : 0);
+      
+      const skillRow = document.createElement('div');
+      skillRow.textContent = `${skillName}: ${formatModifier(totalMod)}`;
+      skillsDisplay.appendChild(skillRow);
+  });
 }
 
 // View and Character Sheet Management
@@ -350,6 +381,7 @@ function loadSelectedCharacter() {
     });
   
     characterNotesInput.value = character.notes;
+    updateAllModifiers(); // Add this line
     alert('Character loaded successfully!');
 }
 
@@ -385,7 +417,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Attach event listeners to buttons
+// Attach event listeners
 saveCharacterButton.addEventListener('click', saveCharacter);
 loadSelectedCharacterButton.addEventListener('click', loadSelectedCharacter);
 deleteCharacterButton.addEventListener('click', deleteCharacter);
+strengthInput.addEventListener('input', updateAllModifiers);
+dexterityInput.addEventListener('input', updateAllModifiers);
+constitutionInput.addEventListener('input', updateAllModifiers);
+intelligenceInput.addEventListener('input', updateAllModifiers);
+wisdomInput.addEventListener('input', updateAllModifiers);
+charismaInput.addEventListener('input', updateAllModifiers);
+characterLevelInput.addEventListener('input', updateAllModifiers);
