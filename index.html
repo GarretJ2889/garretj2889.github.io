@@ -1,531 +1,583 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D&D Character Sheet</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive D&D 5e Character Sheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mate:ital@0;1&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A three-column dashboard layout is used for intuitive organization, mirroring traditional character sheets. Column 1 handles core stats (Abilities, Skills) which drive calculations. Column 2 focuses on identity and combat (Info, HP, AC). Column 3 contains descriptive text fields (Traits, Proficiencies). This structure groups related information, prioritizes frequently-used stats, and provides a clear user flow from core stats to derived combat values. All calculations are updated instantly on input change for a seamless experience. -->
+    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+        }
+        h1, h2, h3 {
+            font-family: 'Mate', serif;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            height: fit-content;
+        }
+        .stat-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+        .stat-block:hover {
+            background-color: #FAFAF9; /* stone-50 */
+        }
+        .stat-label {
+            font-weight: 500;
+            color: #44403C; /* stone-700 */
+        }
+        .ability-score-input {
+            width: 4rem;
+            text-align: center;
+            border: 1px solid #D6D3D1; /* stone-300 */
+            border-radius: 0.375rem;
+            padding: 0.25rem;
+        }
+        .modifier-display {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #A855F7; /* purple-500 */
+            width: 3rem;
+            text-align: center;
+        }
+        .skill-modifier-display {
+            font-weight: 600;
+            color: #166534; /* green-800 */
+            width: 2.5rem;
+            text-align: right;
+        }
+        input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: #A855F7; /* purple-500 */
+        }
+        .header-input {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid #D6D3D1; /* stone-300 */
+            width: 100%;
+            padding: 0.25rem 0.1rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .header-input:focus {
+            outline: none;
+            border-bottom-color: #A855F7; /* purple-500 */
+        }
+        .combat-stat-box {
+            background-color: #FAFAF9; /* stone-50 */
+            border: 1px solid #E7E5E4; /* stone-200 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+        }
+        .combat-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #262626; /* neutral-800 */
+        }
+        .combat-stat-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #78716C; /* stone-500 */
+            margin-top: 0.25rem;
+        }
+        .action-row {
+            border-bottom: 1px dashed #D6D3D1;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .action-row:last-child {
+            border-bottom: none;
+        }
+    </style>
 </head>
-<body>
-  <div class="top-left-image">
-    <img src="https://raw.githubusercontent.com/GarretJ2889/garretj2889.github.io/main/logo.webp" alt="Character Image" id="characterImage">
-  </div>
-  
-  <div class="character-sheet">
-    <header>
-      <h1>D&D Character Sheet</h1>
-    </header>
+<body class="p-4 sm:p-6 md:p-8">
 
-    <!-- Editable View -->
-    <div id="editView">
-      <section class="basic-info">
-        <div>
-          <label for="charName">Name:</label>
-          <input type="text" id="charName" placeholder="Character Name">
-        </div>
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-800">D&D 5e Character Sheet</h1>
+            <p class="text-stone-600 mt-2">An interactive sheet to manage your character's statistics and abilities.</p>
+        </header>
 
-        <div>
-          <label for="charClass">Class:</label>
-          <select id="charClass">
-            <option value="Barbarian">Barbarian</option>
-            <option value="Bard">Bard</option>
-            <option value="Cleric">Cleric</option>
-            <option value="Druid">Druid</option>
-            <option value="Artificer">Artificer</option>
-            <option value="Fighter">Fighter</option>
-            <option value="Wizard">Wizard</option>
-            <option value="Rogue">Rogue</option>
-          </select>
-        </div>
+        <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- COLUMN 1: CORE STATS -->
+            <div class="flex flex-col gap-6">
+                <!-- ABILITY SCORES -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Ability Scores</h2>
+                    <div id="ability-scores-container"></div>
+                </div>
 
-        <div>
-          <label for="charRace">Race:</label>
-          <select id="charRace">
-            <option value="Dragonborn">Dragonborn</option>
-            <option value="Gnome">Gnome</option>
-            <option value="Half-Elf">Half-Elf</option>
-            <option value="Half-Orc">Half-Orc</option>
-            <option value="Halfling">Halfling</option>
-            <option value="Tiefling">Tiefling</option>
-            <option value="Goblin">Goblin</option>
-            <option value="Kobold">Kobold</option>
-            <option value="Foxfolk">Foxfolk</option>
-            <option value="Yuan-Ti">Yuan-Ti</option>
-            <option value="Aasimar">Aasimar</option>
-            <option value="Human">Human</option>
-            <option value="Elf">Elf</option>
-            <option value="Dwarf">Dwarf</option>
-          </select>
-        </div>
+                <!-- SAVING THROWS -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Saving Throws</h2>
+                    <div id="saving-throws-container"></div>
+                </div>
+            </div>
 
-        <div>
-          <label for="characterLevel">Level:</label>
-          <input type="number" id="characterLevel" value="1" min="1">
-        </div>
+            <!-- COLUMN 2: CHARACTER & COMBAT -->
+            <div class="flex flex-col gap-6">
+                <!-- CHARACTER INFO -->
+                <div class="stat-card">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:col-span-3">
+                            <label for="characterName" class="text-sm font-medium text-stone-500">Character Name</label>
+                            <input type="text" id="characterName" class="header-input text-2xl" placeholder="Lancelot">
+                        </div>
+                        <div>
+                            <label for="classLevel" class="text-sm font-medium text-stone-500">Class & Level</label>
+                            <input type="text" id="classLevel" class="header-input" placeholder="Paladin 5">
+                        </div>
+                        <div>
+                            <label for="background" class="text-sm font-medium text-stone-500">Background</label>
+                            <input type="text" id="background" class="header-input" placeholder="Noble">
+                        </div>
+                        <div>
+                            <label for="playerName" class="text-sm font-medium text-stone-500">Player Name</label>
+                            <input type="text" id="playerName" class="header-input" placeholder="Arthur">
+                        </div>
+                        <div>
+                            <label for="race" class="text-sm font-medium text-stone-500">Race</label>
+                            <input type="text" id="race" class="header-input" placeholder="Human">
+                        </div>
+                        <div>
+                            <label for="alignment" class="text-sm font-medium text-stone-500">Alignment</label>
+                            <input type="text" id="alignment" class="header-input" placeholder="Lawful Good">
+                        </div>
+                        <div>
+                            <label for="experience" class="text-sm font-medium text-stone-500">Experience Points</label>
+                            <input type="number" id="experience" class="header-input" placeholder="6500">
+                        </div>
+                    </div>
+                </div>
 
-        <div class="proficiency">
-          <p>Proficiency Bonus:</p>
-          <span id="proficiencyBonus">+2</span>
-        </div>
+                <!-- COMBAT STATS -->
+                <div class="stat-card">
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="combat-stat-box">
+                            <div id="armorClassDisplay" class="combat-stat-value">10</div>
+                            <div class="combat-stat-label">Armor Class</div>
+                        </div>
+                        <div class="combat-stat-box">
+                            <div id="initiativeDisplay" class="combat-stat-value">+0</div>
+                            <div class="combat-stat-label">Initiative</div>
+                        </div>
+                        <div class="combat-stat-box">
+                            <input type="text" id="speed" class="combat-stat-value w-full text-center bg-transparent border-none focus:ring-0" value="30ft">
+                            <div class="combat-stat-label">Speed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card border border-stone-200 p-4">
+                        <label class="text-sm font-medium text-stone-500">Hit Points</label>
+                        <div class="flex items-center justify-center gap-2 mt-2">
+                             <input type="number" id="currentHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="HP">
+                             <span class="text-stone-500">/</span>
+                             <input type="number" id="maxHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="Max">
+                        </div>
+                    </div>
+                     <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div class="stat-card border border-stone-200 p-4">
+                            <label class="text-sm font-medium text-stone-500">Hit Dice</label>
+                            <input type="text" id="hitDice" class="w-full text-center text-lg p-1 mt-1 border border-stone-300 rounded" placeholder="e.g. 5d10">
+                        </div>
+                        <div class="stat-card border border-stone-200 p-4">
+                            <label class="text-sm font-medium text-stone-500">Proficiency</label>
+                            <input type="number" id="proficiencyBonus" class="w-full text-center text-lg p-1 mt-1 border border-stone-300 rounded" value="2" oninput="updateCharacterSheet()">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Features & Traits</h2>
+                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your racial traits, class features, feats, etc."></textarea>
+                </div>
 
-        <div>
-          <label for="hp">HP:</label>
-          <input type="number" id="hp" value="10" min="0">
-        </div>
+                <!-- ACTIONS -->
+                <div class="stat-card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-stone-800 text-center">Actions</h2>
+                        <button id="addActionBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+                    </div>
+                    <div id="actions-container"></div>
+                </div>
+            </div>
 
-        <div>
-          <label for="ac">AC:</label>
-          <input type="number" id="ac" value="10" min="0">
-        </div>
-        <div>
-          <label for="initiative">Initiative:</label>
-          <input type="number" id="initiative" placeholder="Defaults to Dexterity Modifier">
-        </div>
-      </section>
+            <!-- COLUMN 3: SKILLS & PROFICIENCIES -->
+            <div class="flex flex-col gap-6">
+                <!-- SKILLS -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Skills</h2>
+                    <div id="skills-container"></div>
+                </div>
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Other Proficiencies & Languages</h2>
+                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your armor, weapon, and tool proficiencies, as well as languages."></textarea>
+                </div>
 
-      <section class="stats-container">
-        <!-- Strength Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="strength">Strength</label>
-            <input type="number" id="strength" value="10" class="stat-input">
-            <span id="strengthModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Strength Save:</label>
-              <span class="skill-modifier" id="strengthSaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="strength">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
+                <!-- NOTES -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Notes</h2>
+                    <textarea id="notes" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Add any important notes, plot points, or reminders here."></textarea>
+                </div>
+                
+                <!-- SAVE & LOAD -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Save & Load</h2>
+                    <div class="flex flex-col gap-4">
+                        <button id="exportPdfBtn" class="w-full bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Export as PDF</button>
+                        <button id="exportJsonBtn" class="w-full bg-stone-700 text-white font-bold py-2 px-4 rounded-lg">Export as JSON</button>
+                        <input type="file" id="importJsonInput" class="hidden" accept=".json">
+                        <button id="importJsonBtn" class="w-full bg-stone-700 text-white font-bold py-2 px-4 rounded-lg">Import from JSON</button>
+                    </div>
+                </div>
             </div>
-          </div>
-          
-          <div class="stat-skills">
-            <div class="skill-row">
-              <label>Athletics (Str):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="strength">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dexterity Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="dexterity">Dexterity</label>
-            <input type="number" id="dexterity" value="10" class="stat-input">
-            <span id="dexterityModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Dexterity Save:</label>
-              <span class="skill-modifier" id="dexteritySaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="dexterity">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="stat-skills">
-            <div class="skill-row">
-              <label>Acrobatics (Dex):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="dexterity">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Sleight of Hand (Dex):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="dexterity">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Stealth (Dex):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="dexterity">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Constitution Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="constitution">Constitution</label>
-            <input type="number" id="constitution" value="10" class="stat-input">
-            <span id="constitutionModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Constitution Save:</label>
-              <span class="skill-modifier" id="constitutionSaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="constitution">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Intelligence Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="intelligence">Intelligence</label>
-            <input type="number" id="intelligence" value="10" class="stat-input">
-            <span id="intelligenceModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Intelligence Save:</label>
-              <span class="skill-modifier" id="intelligenceSaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="stat-skills">
-            <div class="skill-row">
-              <label>Arcana (Int):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>History (Int):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Investigation (Int):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Nature (Int):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Religion (Int):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="intelligence">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Wisdom Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="wisdom">Wisdom</label>
-            <input type="number" id="wisdom" value="10" class="stat-input">
-            <span id="wisdomModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Wisdom Save:</label>
-              <span class="skill-modifier" id="wisdomSaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="stat-skills">
-            <div class="skill-row">
-              <label>Animal Handling (Wis):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Insight (Wis):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Medicine (Wis):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Perception (Wis):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Survival (Wis):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="wisdom">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Charisma Block -->
-        <div class="stat-block">
-          <div class="stat-row">
-            <label for="charisma">Charisma</label>
-            <input type="number" id="charisma" value="10" class="stat-input">
-            <span id="charismaModifier" class="stat-modifier">+0</span>
-          </div>
-          
-          <div class="saving-throw">
-            <div class="skill-row">
-              <label>Charisma Save:</label>
-              <span class="skill-modifier" id="charismaSaveMod">+0</span>
-              <select class="saving-throw-select" data-stat="charisma">
-                <option value="none" selected>None</option>
-                <option value="proficient">Proficient</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="stat-skills">
-            <div class="skill-row">
-              <label>Deception (Cha):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="charisma">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Intimidation (Cha):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="charisma">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Performance (Cha):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="charisma">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-            <div class="skill-row">
-              <label>Persuasion (Cha):</label>
-              <span class="skill-modifier">+0</span>
-              <select class="skill-select" data-stat="charisma">
-                <option value="none" selected>None</option>
-                <option value="half">Half Proficiency</option>
-                <option value="proficient">Proficient</option>
-                <option value="expertise">Expertise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="abilities">
-        <h2>Abilities</h2>
-        <div class="ability-inputs">
-          <input type="text" id="newAbilityName" placeholder="Ability Name">
-          <textarea id="newAbilityDesc" placeholder="Ability Description"></textarea>
-          <button id="addAbility">Add Ability</button>
-        </div>
-        <ul id="abilitiesList"></ul>
-      </section>
-
-      <section class="feats">
-        <h2>Feats</h2>
-        <div class="feat-inputs">
-          <input type="text" id="newFeatName" placeholder="Feat Name">
-          <textarea id="newFeatDesc" placeholder="Feat Description"></textarea>
-          <button id="addFeat">Add Feat</button>
-        </div>
-        <ul id="featsList"></ul>
-      </section>
-
-      <section class="actions">
-        <h2>Actions</h2>
-        <div class="action-inputs">
-          <label for="actionType">Action Type:</label>
-          <select id="actionType">
-            <option value="">Select</option>
-            <option value="Action">Action</option>
-            <option value="Bounus Action">Bounus Action</option>
-            <option value="Reaction">Reaction</option>
-          </select>
-      
-          <input type="text" id="newActionName" placeholder="Action name">
-          <textarea id="newActionDesc" placeholder="Action description"></textarea>
-          
-          <div class="charges-input">
-            <label for="actionCharges">Charges:</label>
-            <input type="number" id="actionCharges" min="0" value="0">
-            <span>(0 = no charges)</span>
-          </div>
-          
-          <button id="addAction">Add Action</button>
-        </div>
-        <ul id="actionsList"></ul>
-      </section>
-
-      <section class="inventory">
-        <h2>Inventory</h2>
-        <div class="inventory-inputs">
-          <input type="text" id="newItem" placeholder="Item Name">
-          <input type="text" id="newItemType" placeholder="Type (e.g., Weapon, Armor)">
-          <input type="text" id="newToHit" placeholder="To Hit or Saving Throw">
-          <input type="text" id="newDamage" placeholder="Damage (e.g., 1d8 + 3)">
-          <input type="number" id="newCharges" placeholder="Charges (Optional)" min="0">
-          <button id="addItem">Add Item</button>
-        </div>
-        <ul id="inventoryList"></ul>
-      </section>
-      
-      <!-- Edit Modal (updated) -->
-      <div id="editItemModal" class="modal">
-        <div class="modal-content">
-          <h2>Edit Item</h2>
-          <input type="text" id="editItemName" placeholder="Item Name">
-          <input type="text" id="editItemType" placeholder="Type">
-          <input type="text" id="editToHit" placeholder="To Hit">
-          <input type="text" id="editDamage" placeholder="Damage">
-          <input type="number" id="editCharges" placeholder="Charges" min="0">
-          <div class="modal-buttons">
-            <button id="saveItemChanges">Save Changes</button>
-            <button id="deleteItem">Delete Item</button>
-            <button id="cancelEdit">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <section class="attunement">
-        <h2>Attunement</h2>
-        <div class="attunement-slot" data-slot="1">Click to Select Item</div>
-        <div class="attunement-slot" data-slot="2">Click to Select Item</div>
-        <div class="attunement-slot" data-slot="3">Click to Select Item</div>
-      </section>
-
-      <div id="editItemModal" class="modal" style="display: none;">
-        <div class="modal-content">
-          <h2>Edit Item</h2>
-          <label for="editItemName">Item Name:</label>
-          <input type="text" id="editItemName" />
-      
-          <label for="editItemType">Type:</label>
-          <input type="text" id="editItemType" />
-      
-          <label for="editToHit">To Hit:</label>
-          <input type="text" id="editToHit" />
-      
-          <label for="editDamage">Damage:</label>
-          <input type="text" id="editDamage" />
-      
-          <label for="editCharges">Charges:</label>
-          <input type="number" id="editCharges" min="0" />
-      
-          <button id="saveItemChanges">Save Changes</button>
-          <button onclick="closeEditModal()">Cancel</button>
-        </div>
-      </div>
-
-      <section class="notes">
-        <h2>Notes</h2>
-        <textarea id="characterNotes" rows="6" placeholder="Enter your inventory, goals, or notes..."></textarea>
-      </section>
-
-      <section class="save-load">
-        <button id="saveCharacter">Save Character</button>
-        <label for="characterList">Select Character:</label>
-        <select id="characterList">
-          <option value="">-- Select a character --</option>
-        </select>
-        <button id="loadSelectedCharacter">Load Selected</button>
-        <button id="deleteCharacter">Delete Selected</button>
-      </section>
+        </main>
     </div>
 
-    <div id="diceRollResult" style="display: none;">
-      <p>Roll Result: <span id="rollOutput">-</span></p>
-    </div>
+    <script>
+        const abilities = [
+            { name: 'Strength', abbr: 'STR' },
+            { name: 'Dexterity', abbr: 'DEX' },
+            { name: 'Constitution', abbr: 'CON' },
+            { name: 'Intelligence', abbr: 'INT' },
+            { name: 'Wisdom', abbr: 'WIS' },
+            { name: 'Charisma', abbr: 'CHA' },
+        ];
 
-    <script src="script.js"></script>
-  </div>
+        const skills = [
+            { name: 'Acrobatics', ability: 'DEX' },
+            { name: 'Animal Handling', ability: 'WIS' },
+            { name: 'Arcana', ability: 'INT' },
+            { name: 'Athletics', ability: 'STR' },
+            { name: 'Deception', ability: 'CHA' },
+            { name: 'History', ability: 'INT' },
+            { name: 'Insight', ability: 'WIS' },
+            { name: 'Intimidation', ability: 'CHA' },
+            { name: 'Investigation', ability: 'INT' },
+            { name: 'Medicine', ability: 'WIS' },
+            { name: 'Nature', ability: 'INT' },
+            { name: 'Perception', ability: 'WIS' },
+            { name: 'Performance', ability: 'CHA' },
+            { name: 'Persuasion', ability: 'CHA' },
+            { name: 'Religion', ability: 'INT' },
+            { name: 'Sleight of Hand', ability: 'DEX' },
+            { name: 'Stealth', ability: 'DEX' },
+            { name: 'Survival', ability: 'WIS' },
+        ];
+        
+        let actionCount = 0;
+
+        function createStatBlock(container, id, label) {
+            const block = document.createElement('div');
+            block.className = 'stat-block';
+            block.innerHTML = `
+                <label for="${id}" class="stat-label">${label}</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="${id}" class="ability-score-input" value="10" oninput="updateCharacterSheet()">
+                    <div id="${id}Mod" class="modifier-display">+0</div>
+                </div>
+            `;
+            container.appendChild(block);
+        }
+
+        function createSavingThrowBlock(container, id, label, abilityId) {
+            const block = document.createElement('div');
+            block.className = 'stat-block';
+            block.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="${id}Prof" onchange="updateCharacterSheet()">
+                    <label for="${id}Prof" class="stat-label">${label}</label>
+                </div>
+                <div id="${id}Bonus" class="skill-modifier-display">+0</div>
+            `;
+            container.appendChild(block);
+        }
+
+        function createSkillBlock(container, skill) {
+            const id = skill.name.replace(/\s+/g, '');
+            const block = document.createElement('div');
+            block.className = 'stat-block';
+            block.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-stone-500">P</span>
+                    <input type="checkbox" id="${id}Prof" onchange="updateCharacterSheet()">
+                    <span class="text-sm font-bold text-stone-500 ml-2">E</span>
+                    <input type="checkbox" id="${id}Expertise" onchange="updateCharacterSheet()">
+                    <label for="${id}Prof" class="stat-label ml-2">${skill.name} <span class="text-xs text-stone-400">(${skill.ability})</span></label>
+                </div>
+                <div id="${id}Bonus" class="skill-modifier-display">+0</div>
+            `;
+            container.appendChild(block);
+        }
+        
+        function createActionBlock(container, data = {}) {
+            const actionId = data.id || `action-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const actionRow = document.createElement('div');
+            actionRow.className = 'action-row grid grid-cols-1 md:grid-cols-3 gap-4';
+            actionRow.id = actionId;
+            actionRow.innerHTML = `
+                <div class="col-span-1 md:col-span-3">
+                    <label for="${actionId}-name" class="text-sm font-medium text-stone-500">Action Name</label>
+                    <input type="text" id="${actionId}-name" class="header-input" value="${data.name || ''}" placeholder="e.g., Longsword Attack">
+                </div>
+                <div class="flex flex-col">
+                    <label for="${actionId}-stat" class="text-sm font-medium text-stone-500">To Hit</label>
+                    <div class="flex items-center gap-2">
+                         <span class="text-sm font-bold text-stone-500">P</span>
+                         <input type="checkbox" id="${actionId}-prof" onchange="updateCharacterSheet()" ${data.proficient ? 'checked' : ''}>
+                        <select id="${actionId}-stat" class="w-full p-2 border border-stone-300 rounded-md" onchange="updateCharacterSheet()">
+                            ${abilities.map(ability => `<option value="${ability.abbr}" ${data.stat === ability.abbr ? 'selected' : ''}>${ability.abbr}</option>`).join('')}
+                        </select>
+                        <div id="${actionId}-tohit" class="modifier-display w-12">+0</div>
+                    </div>
+                </div>
+                <div>
+                    <label for="${actionId}-damage" class="text-sm font-medium text-stone-500">Damage</label>
+                    <input type="text" id="${actionId}-damage" class="w-full p-2 border border-stone-300 rounded-md" value="${data.damage || ''}" placeholder="e.g., 1d8+3 Slashing">
+                </div>
+                <div class="flex items-center justify-end">
+                    <button onclick="document.getElementById('${actionId}').remove(); updateCharacterSheet();" class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold -mt-8">&times;</button>
+                </div>
+            `;
+            container.appendChild(actionRow);
+            updateCharacterSheet();
+        }
+
+        function updateActionToHit(actionId, abilityMods, proficiencyBonus) {
+            const statSelect = document.getElementById(`${actionId}-stat`);
+            const profCheckbox = document.getElementById(`${actionId}-prof`);
+            const toHitDisplay = document.getElementById(`${actionId}-tohit`);
+
+            if (statSelect && toHitDisplay) {
+                const selectedStat = statSelect.value;
+                const statMod = abilityMods[selectedStat] || 0;
+                const isProficient = profCheckbox.checked;
+                const bonus = statMod + (isProficient ? proficiencyBonus : 0);
+                toHitDisplay.textContent = formatBonus(bonus);
+            }
+        }
+
+        function initializeSheet() {
+            const abilityContainer = document.getElementById('ability-scores-container');
+            abilities.forEach(ability => createStatBlock(abilityContainer, ability.abbr.toLowerCase(), ability.name));
+
+            const savingThrowsContainer = document.getElementById('saving-throws-container');
+            abilities.forEach(ability => createSavingThrowBlock(savingThrowsContainer, ability.abbr.toLowerCase() + 'Save', ability.name, ability.abbr.toLowerCase()));
+            
+            const skillsContainer = document.getElementById('skills-container');
+            skills.forEach(skill => createSkillBlock(skillsContainer, skill));
+            
+            document.getElementById('addActionBtn').addEventListener('click', () => {
+                createActionBlock(document.getElementById('actions-container'));
+            });
+
+            document.getElementById('exportPdfBtn').addEventListener('click', exportToPdf);
+            document.getElementById('exportJsonBtn').addEventListener('click', exportToJson);
+            document.getElementById('importJsonBtn').addEventListener('click', () => {
+                document.getElementById('importJsonInput').click();
+            });
+            document.getElementById('importJsonInput').addEventListener('change', importFromJson);
+            
+            updateCharacterSheet();
+        }
+
+        function getModifier(score) {
+            return Math.floor((score - 10) / 2);
+        }
+
+        function formatBonus(bonus) {
+            return bonus >= 0 ? `+${bonus}` : bonus;
+        }
+
+        function updateCharacterSheet() {
+            const proficiencyBonus = parseInt(document.getElementById('proficiencyBonus').value) || 0;
+            const abilityScores = {};
+            const abilityMods = {};
+
+            abilities.forEach(ability => {
+                const abbr = ability.abbr.toLowerCase();
+                const score = parseInt(document.getElementById(abbr).value) || 10;
+                const mod = getModifier(score);
+                abilityScores[ability.abbr] = score;
+                abilityMods[ability.abbr] = mod;
+                document.getElementById(`${abbr}Mod`).textContent = formatBonus(mod);
+            });
+
+            abilities.forEach(ability => {
+                const abbr = ability.abbr.toLowerCase();
+                const isProficient = document.getElementById(`${abbr}SaveProf`).checked;
+                const bonus = abilityMods[ability.abbr] + (isProficient ? proficiencyBonus : 0);
+                document.getElementById(`${abbr}SaveBonus`).textContent = formatBonus(bonus);
+            });
+
+            skills.forEach(skill => {
+                const id = skill.name.replace(/\s+/g, '');
+                const isExpert = document.getElementById(`${id}Expertise`).checked;
+                const isProficient = document.getElementById(`${id}Prof`).checked;
+                const bonus = abilityMods[skill.ability] + (isExpert ? proficiencyBonus * 2 : (isProficient ? proficiencyBonus : 0));
+                document.getElementById(`${id}Bonus`).textContent = formatBonus(bonus);
+            });
+            
+            document.getElementById('armorClassDisplay').textContent = 10 + abilityMods['DEX'];
+            document.getElementById('initiativeDisplay').textContent = formatBonus(abilityMods['DEX']);
+            
+            document.querySelectorAll('.action-row').forEach(row => {
+                updateActionToHit(row.id, abilityMods, proficiencyBonus);
+            });
+        }
+        
+        async function exportToPdf() {
+            const mainContent = document.querySelector('main');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            const canvas = await html2canvas(mainContent, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = doc.getImageProperties(imgData);
+            const pdfWidth = doc.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            doc.save('dnd-character-sheet.pdf');
+        }
+
+        function exportToJson() {
+            const data = {
+                characterInfo: {
+                    characterName: document.getElementById('characterName').value,
+                    classLevel: document.getElementById('classLevel').value,
+                    background: document.getElementById('background').value,
+                    playerName: document.getElementById('playerName').value,
+                    race: document.getElementById('race').value,
+                    alignment: document.getElementById('alignment').value,
+                    experience: document.getElementById('experience').value,
+                },
+                combatStats: {
+                    speed: document.getElementById('speed').value,
+                    currentHP: document.getElementById('currentHP').value,
+                    maxHP: document.getElementById('maxHP').value,
+                    hitDice: document.getElementById('hitDice').value,
+                    proficiencyBonus: document.getElementById('proficiencyBonus').value,
+                },
+                abilityScores: {},
+                savingThrows: {},
+                skills: {},
+                actions: [],
+                notes: document.getElementById('notes').value
+            };
+
+            abilities.forEach(ability => {
+                const abbr = ability.abbr.toLowerCase();
+                data.abilityScores[abbr] = parseInt(document.getElementById(abbr).value);
+                data.savingThrows[`${abbr}SaveProf`] = document.getElementById(`${abbr}SaveProf`).checked;
+            });
+
+            skills.forEach(skill => {
+                const id = skill.name.replace(/\s+/g, '');
+                data.skills[id] = {
+                    proficient: document.getElementById(`${id}Prof`).checked,
+                    expertise: document.getElementById(`${id}Expertise`).checked,
+                };
+            });
+
+            document.querySelectorAll('.action-row').forEach(row => {
+                data.actions.push({
+                    id: row.id,
+                    name: document.getElementById(`${row.id}-name`).value,
+                    stat: document.getElementById(`${row.id}-stat`).value,
+                    proficient: document.getElementById(`${row.id}-prof`).checked,
+                    damage: document.getElementById(`${row.id}-damage`).value,
+                });
+            });
+
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${data.characterInfo.characterName || 'dnd-character'}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importFromJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    document.getElementById('characterName').value = data.characterInfo.characterName;
+                    document.getElementById('classLevel').value = data.characterInfo.classLevel;
+                    document.getElementById('background').value = data.characterInfo.background;
+                    document.getElementById('playerName').value = data.characterInfo.playerName;
+                    document.getElementById('race').value = data.characterInfo.race;
+                    document.getElementById('alignment').value = data.characterInfo.alignment;
+                    document.getElementById('experience').value = data.characterInfo.experience;
+                    
+                    document.getElementById('speed').value = data.combatStats.speed;
+                    document.getElementById('currentHP').value = data.combatStats.currentHP;
+                    document.getElementById('maxHP').value = data.combatStats.maxHP;
+                    document.getElementById('hitDice').value = data.combatStats.hitDice;
+                    document.getElementById('proficiencyBonus').value = data.combatStats.proficiencyBonus;
+
+                    abilities.forEach(ability => {
+                        const abbr = ability.abbr.toLowerCase();
+                        document.getElementById(abbr).value = data.abilityScores[abbr] || 10;
+                        document.getElementById(`${abbr}SaveProf`).checked = data.savingThrows[`${abbr}SaveProf`] || false;
+                    });
+
+                    skills.forEach(skill => {
+                        const id = skill.name.replace(/\s+/g, '');
+                        if (data.skills[id]) {
+                            document.getElementById(`${id}Prof`).checked = data.skills[id].proficient;
+                            document.getElementById(`${id}Expertise`).checked = data.skills[id].expertise;
+                        }
+                    });
+
+                    document.getElementById('notes').value = data.notes;
+
+                    const actionsContainer = document.getElementById('actions-container');
+                    actionsContainer.innerHTML = '';
+                    if (data.actions && Array.isArray(data.actions)) {
+                        data.actions.forEach(actionData => createActionBlock(actionsContainer, actionData));
+                    }
+                    
+                    updateCharacterSheet();
+                    alert('Character data imported successfully!');
+                } catch (error) {
+                    alert('Failed to import file. Please ensure it is a valid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeSheet);
+    </script>
 </body>
 </html>
