@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mate:ital@0;1&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A reorganized dashboard layout. The top section now highlights Character Details and Hit Points for immediate visibility. The main content is split into a three-column grid. Column 1 groups core stats (Abilities, Saving Throws, Skills). Column 2 contains combat essentials (AC, Initiative, Speed) followed by a new Conditions section, Actions, and descriptive traits (Features & Traits). Column 3 holds descriptive and utility sections (Proficiencies, Inventory, Notes, Backstory, Save/Load). This new structure provides a more intuitive flow, starting with key identity and vitals, then grouping related mechanics and finally, utility and descriptive information. -->
-    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. A new Inventory section with currency and attunement fields has been added. The actions section now also includes a dropdown to specify the action type (Action, Bonus Action, Reaction). A new Backstory section has been added for narrative text. A new button and dynamic fields have been added to the Skills section to allow for homebrew skills. All new fields are included in the JSON save/load process. A new Conditions section has been added with a dropdown for standard D&D conditions and a description field that updates automatically. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Disadvantage checkboxes have been added to all skills. All combat stats (AC, Initiative, Speed) are now editable. The attunement limit is now an editable field, allowing for a dynamic maximum count. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
+    <!-- Application Structure Plan: A reorganized dashboard layout. The top section now highlights Character Details and Hit Points for immediate visibility and is collapsible. The main content is split into a three-column grid. Column 1 groups core stats (Abilities, Saving Throws) and now has a collapsible Skills section. Column 2 contains combat essentials (AC, Initiative, Speed) followed by a new Conditions section, Actions, and a button to open the spellbook modal. Column 3 holds descriptive and utility sections (Proficiencies, Inventory, Notes, Backstory, Save/Load), all of which are now collapsible. The spells section is now a pop-out modal to improve page clarity. This new structure provides a more intuitive flow, starting with key identity and vitals, then grouping related mechanics and finally, utility and descriptive information. -->
+    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. A new Inventory section with currency and attunement fields has been added. The actions section now also includes a dropdown to specify the action type (Action, Bonus Action, Reaction). A new Backstory section has been added for narrative text. A new button and dynamic fields have been added to the Skills section to allow for homebrew skills. All new fields are included in the JSON save/load process. A new Conditions section has been added with a dropdown for standard D&D conditions and a description field that updates automatically. The Spells section has been streamlined to a single "Prepared Spells" view with manual entry fields and a new Spell Slot tracker. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Disadvantage checkboxes have been added to all skills. All combat stats (AC, Initiative, Speed) are now editable. The attunement limit is now an editable field, allowing for a dynamic maximum count. A dark mode toggle has been added to the top-right corner of the page. The Class and Level fields are now separate, with the Proficiency Bonus automatically calculated based on the character level. The spell list has been removed in favor of manual entry. The spell slots section now automatically calculates slots based on character level, while still allowing for manual adjustment. All major descriptive/utility sections are now collapsible. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -123,49 +123,173 @@
             padding-bottom: 1rem;
             margin-bottom: 1rem;
         }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-button.active {
+            border-bottom-color: #A855F7;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .modal {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+        }
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            border-radius: 0.5rem;
+        }
+        .collapsed-content {
+            display: none;
+        }
+        /* Dark Mode styles */
+        body.dark {
+            background-color: #1c1917; /* stone-900 */
+            color: #d6d3d1; /* stone-300 */
+        }
+        .dark .stat-card {
+            background-color: #292524; /* stone-800 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+        }
+        .dark .stat-block:hover {
+            background-color: #44403c; /* stone-700 */
+        }
+        .dark .stat-label {
+            color: #d6d3d1; /* stone-300 */
+        }
+        .dark .ability-score-input, .dark .header-input, .dark .combat-stat-value, .dark .currency-input, .dark textarea {
+            background-color: #44403c; /* stone-700 */
+            border-color: #57534e; /* stone-600 */
+            color: #f5f5f4; /* stone-100 */
+        }
+        .dark .header-input:focus {
+            border-bottom-color: #c084fc; /* purple-400 */
+        }
+        .dark .combat-stat-box {
+            background-color: #292524; /* stone-800 */
+            border-color: #44403c; /* stone-700 */
+        }
+        .dark .combat-stat-value {
+            color: #f5f5f4; /* stone-100 */
+        }
+        .dark .combat-stat-label {
+            color: #a8a29e; /* stone-400 */
+        }
+        .dark .modifier-display {
+            color: #c084fc; /* purple-400 */
+        }
+        .dark .skill-modifier-display {
+            color: #4ade80; /* green-400 */
+        }
+        .dark .condition-block {
+            border-bottom-color: #44403c; /* stone-700 */
+        }
+        .dark .action-row {
+            border-bottom-color: #44403c; /* stone-700 */
+        }
+        .dark .stat-card.border-stone-200 {
+            border-color: #44403c; /* stone-700 */
+        }
+        .dark .tab-button {
+            color: #d6d3d1;
+        }
+        .dark .tab-button.active {
+            border-bottom-color: #c084fc;
+        }
+        .dark .modal-content {
+            background-color: #292524;
+            color: #d6d3d1;
+        }
+        .dark .collapsible-header {
+            background-color: #292524;
+            color: #d6d3d1;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-stone-800">D&D 5e Character Sheet</h1>
-            <p class="text-stone-600 mt-2">An interactive sheet to manage your character's statistics and abilities.</p>
+        <header class="mb-8 text-center relative">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-800 dark:text-stone-100">D&D 5e Character Sheet</h1>
+            <p class="text-stone-600 dark:text-stone-400 mt-2">An interactive sheet to manage your character's statistics and abilities.</p>
+            <div class="absolute top-0 right-0">
+                <button id="theme-toggle" class="bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-100 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">
+                    <span id="theme-icon">🌙</span>
+                </button>
+            </div>
         </header>
         
         <!-- TOP SECTION: CHARACTER DETAILS & HP -->
-        <div class="stat-card mb-6">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="sm:col-span-3">
-                    <label for="characterName" class="text-sm font-medium text-stone-500">Character Name</label>
-                    <input type="text" id="characterName" class="header-input text-2xl" placeholder="Lancelot">
-                </div>
-                <div>
-                    <label for="classLevel" class="text-sm font-medium text-stone-500">Class & Level</label>
-                    <input type="text" id="classLevel" class="header-input" placeholder="Paladin 5">
-                </div>
-                <div>
-                    <label for="background" class="text-sm font-medium text-stone-500">Background</label>
-                    <input type="text" id="background" class="header-input" placeholder="Noble">
-                </div>
-                <div>
-                    <label for="playerName" class="text-sm font-medium text-stone-500">Player Name</label>
-                    <input type="text" id="playerName" class="header-input" placeholder="Arthur">
-                </div>
-                <div>
-                    <label for="race" class="text-sm font-medium text-stone-500">Race</label>
-                    <input type="text" id="race" class="header-input" placeholder="Human">
-                </div>
-                <div>
-                    <label for="alignment" class="text-sm font-medium text-stone-500">Alignment</label>
-                    <input type="text" id="alignment" class="header-input" placeholder="Lawful Good">
-                </div>
-                <div>
-                    <label for="experience" class="text-sm font-medium text-stone-500">Experience Points</label>
-                    <input type="number" id="experience" class="header-input" placeholder="6500">
+        <div id="character-details" class="stat-card mb-6">
+            <div onclick="toggleCollapse('character-details')" class="flex justify-between items-center mb-4 cursor-pointer">
+                 <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100">Character Details</h2>
+                 <div class="flex items-center gap-4">
+                     <div>
+                         <label for="characterLevel" class="text-sm font-medium text-stone-500">Level</label>
+                         <input type="number" id="characterLevel" class="w-16 header-input text-center" placeholder="1" value="1" min="1" max="20" oninput="updateCharacterSheet()">
+                     </div>
+                     <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
+                 </div>
+            </div>
+            <div id="character-details-content">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-3">
+                        <label for="characterName" class="text-sm font-medium text-stone-500">Character Name</label>
+                        <input type="text" id="characterName" class="header-input text-2xl" placeholder="Lancelot">
+                    </div>
+                    <div>
+                        <label for="characterClass" class="text-sm font-medium text-stone-500">Class</label>
+                        <input type="text" id="characterClass" class="header-input" placeholder="Paladin">
+                    </div>
+                    <div>
+                        <label for="playerName" class="text-sm font-medium text-stone-500">Player Name</label>
+                        <input type="text" id="playerName" class="header-input" placeholder="Arthur">
+                    </div>
+                    <div>
+                        <label for="background" class="text-sm font-medium text-stone-500">Background</label>
+                        <input type="text" id="background" class="header-input" placeholder="Noble">
+                    </div>
+                    <div>
+                        <label for="alignment" class="text-sm font-medium text-stone-500">Alignment</label>
+                        <input type="text" id="alignment" class="header-input" placeholder="Lawful Good">
+                    </div>
+                    <div>
+                        <label for="experience" class="text-sm font-medium text-stone-500">Experience Points</label>
+                        <input type="number" id="experience" class="header-input" placeholder="6500">
+                    </div>
                 </div>
             </div>
-             <div class="stat-card border border-stone-200 p-4 mt-6">
+            <div id="hit-points-container" class="stat-card border border-stone-200 p-4 mt-6">
                 <label class="text-sm font-medium text-stone-500">Hit Points</label>
                 <div class="flex items-center justify-center gap-2 mt-2">
                      <input type="number" id="currentHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="HP">
@@ -181,28 +305,33 @@
             <div class="flex flex-col gap-6">
                 <!-- ABILITY SCORES -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Ability Scores</h2>
+                    <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-4 text-center">Ability Scores</h2>
                     <div id="ability-scores-container"></div>
                 </div>
 
                 <!-- SAVING THROWS -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Saving Throws</h2>
+                    <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-4 text-center">Saving Throws</h2>
                     <div id="saving-throws-container"></div>
                 </div>
 
                 <!-- SKILLS -->
-                <div class="stat-card">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-stone-800 text-center">Skills</h2>
-                        <button id="addSkillBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+                <div id="skills-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('skills-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                         <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Skills</h2>
+                         <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
                     </div>
-                    <div id="skills-container"></div>
-                    <div id="homebrew-skills-container"></div>
+                    <div id="skills-collapsible-content">
+                        <div class="flex justify-between items-center mb-4">
+                            <button id="addSkillBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+                        </div>
+                        <div id="skills-container"></div>
+                        <div id="homebrew-skills-container"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- COLUMN 2: COMBAT -->
+            <!-- COLUMN 2: COMBAT & ABILITIES -->
             <div class="flex flex-col gap-6">
                 <!-- COMBAT STATS (Remaining) -->
                 <div class="stat-card">
@@ -227,7 +356,7 @@
                         </div>
                         <div class="stat-card border border-stone-200 p-4">
                             <label class="text-sm font-medium text-stone-500">Proficiency</label>
-                            <input type="number" id="proficiencyBonus" class="w-full text-center text-lg p-1 mt-1 border border-stone-300 rounded" value="2" oninput="updateCharacterSheet()">
+                            <input type="number" id="proficiencyBonus" class="w-full text-center text-lg p-1 mt-1 border border-stone-300 rounded" value="2" readonly>
                         </div>
                     </div>
                 </div>
@@ -235,7 +364,7 @@
                 <!-- CONDITIONS -->
                 <div class="stat-card">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-stone-800 text-center">Conditions</h2>
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Conditions</h2>
                         <button id="addConditionBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
                     </div>
                     <div id="conditions-container" class="flex flex-col gap-4"></div>
@@ -244,81 +373,115 @@
                 <!-- ACTIONS -->
                 <div class="stat-card">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-stone-800 text-center">Actions</h2>
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Actions</h2>
                         <button id="addActionBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
                     </div>
                     <div id="actions-container"></div>
                 </div>
-                
+
+                <!-- SPELLS BUTTON -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Features & Traits</h2>
-                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your racial traits, class features, feats, etc."></textarea>
+                    <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-4 text-center">Spells</h2>
+                    <div class="flex justify-center">
+                        <button id="openSpellsModalBtn" class="bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Open Spellbook</button>
+                    </div>
+                </div>
+                
+                <div id="features-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('features-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Features & Traits</h2>
+                         <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
+                    </div>
+                    <div id="features-collapsible-content">
+                        <textarea id="features-and-traits" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your racial traits, class features, feats, etc."></textarea>
+                    </div>
+                </div>
+
+                <div id="proficiencies-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('proficiencies-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Other Proficiencies & Languages</h2>
+                        <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
+                    </div>
+                    <div id="proficiencies-collapsible-content">
+                        <textarea id="proficiencies" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your armor, weapon, and tool proficiencies, as well as languages."></textarea>
+                    </div>
                 </div>
             </div>
 
             <!-- COLUMN 3: DESCRIPTIVE & UTILITY -->
             <div class="flex flex-col gap-6">
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Other Proficiencies & Languages</h2>
-                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your armor, weapon, and tool proficiencies, as well as languages."></textarea>
-                </div>
 
                 <!-- INVENTORY & ATTUNEMENT -->
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Inventory & Attunement</h2>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-stone-600">Attuned Items</h3>
-                        <div class="flex items-center gap-2">
-                            <span id="attunementCount" class="text-sm font-bold text-stone-500">0/3</span>
-                            <button id="addAttunedBtn" class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-md font-bold">+</button>
-                        </div>
+                <div id="inventory-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('inventory-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Inventory & Attunement</h2>
+                        <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
                     </div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <label for="maxAttunement" class="text-sm font-medium text-stone-500">Max Attuned Items</label>
-                        <input type="number" id="maxAttunement" class="w-16 p-1 border border-stone-300 rounded-md text-sm text-center" value="3" min="0" oninput="updateAttunementCount()">
+                    <div id="inventory-collapsible-content">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-stone-600 dark:text-stone-400">Attuned Items</h3>
+                            <div class="flex items-center gap-2">
+                                <span id="attunementCount" class="text-sm font-bold text-stone-500">0/3</span>
+                                <button id="addAttunedBtn" class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-md font-bold">+</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mb-4">
+                            <label for="maxAttunement" class="text-sm font-medium text-stone-500">Max Attuned Items</label>
+                            <input type="number" id="maxAttunement" class="w-16 p-1 border border-stone-300 rounded-md text-sm text-center" value="3" min="0" oninput="updateAttunementCount()">
+                        </div>
+                        <div id="attunedItems-container" class="mb-4 flex flex-col gap-2"></div>
+                        <h3 class="text-xl font-bold text-stone-600 dark:text-stone-400 mb-2">General Items</h3>
+                        <div class="grid grid-cols-5 gap-2 mb-4">
+                            <div>
+                                <label for="cp" class="text-sm font-medium text-stone-500">CP</label>
+                                <input type="number" id="cp" class="currency-input" placeholder="0">
+                            </div>
+                            <div>
+                                <label for="sp" class="text-sm font-medium text-stone-500">SP</label>
+                                <input type="number" id="sp" class="currency-input" placeholder="0">
+                            </div>
+                            <div>
+                                <label for="ep" class="text-sm font-medium text-stone-500">EP</label>
+                                <input type="number" id="ep" class="currency-input" placeholder="0">
+                            </div>
+                            <div>
+                                <label for="gp" class="text-sm font-medium text-stone-500">GP</label>
+                                <input type="number" id="gp" class="currency-input" placeholder="0">
+                            </div>
+                            <div>
+                                <label for="pp" class="text-sm font-medium text-stone-500">PP</label>
+                                <input type="number" id="pp" class="currency-input" placeholder="0">
+                            </div>
+                        </div>
+                        <textarea id="inventory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your items here..."></textarea>
                     </div>
-                    <div id="attunedItems-container" class="mb-4 flex flex-col gap-2"></div>
-                    <h3 class="text-xl font-bold text-stone-600 mb-2">General Items</h3>
-                    <div class="grid grid-cols-5 gap-2 mb-4">
-                        <div>
-                            <label for="cp" class="text-sm font-medium text-stone-500">CP</label>
-                            <input type="number" id="cp" class="currency-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label for="sp" class="text-sm font-medium text-stone-500">SP</label>
-                            <input type="number" id="sp" class="currency-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label for="ep" class="text-sm font-medium text-stone-500">EP</label>
-                            <input type="number" id="ep" class="currency-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label for="gp" class="text-sm font-medium text-stone-500">GP</label>
-                            <input type="number" id="gp" class="currency-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label for="pp" class="text-sm font-medium text-stone-500">PP</label>
-                            <input type="number" id="pp" class="currency-input" placeholder="0">
-                        </div>
-                    </div>
-                    <textarea id="inventory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your items here..."></textarea>
                 </div>
 
                 <!-- NOTES -->
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Notes</h2>
-                    <textarea id="notes" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Add any important notes, plot points, or reminders here."></textarea>
+                <div id="notes-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('notes-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Notes</h2>
+                         <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
+                    </div>
+                    <div id="notes-collapsible-content">
+                        <textarea id="notes" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Add any important notes, plot points, or reminders here."></textarea>
+                    </div>
                 </div>
 
                 <!-- BACKSTORY -->
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Backstory</h2>
-                    <textarea id="backstory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Describe your character's history, motivations, and goals."></textarea>
+                <div id="backstory-collapsible" class="stat-card">
+                    <div onclick="toggleCollapse('backstory-collapsible')" class="flex justify-between items-center mb-4 cursor-pointer">
+                        <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 text-center">Backstory</h2>
+                         <span class="text-2xl font-bold text-stone-500 toggle-icon">▲</span>
+                    </div>
+                    <div id="backstory-collapsible-content">
+                        <textarea id="backstory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Describe your character's history, motivations, and goals."></textarea>
+                    </div>
                 </div>
                 
                 <!-- SAVE & LOAD -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Save & Load</h2>
+                    <h2 class="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-4 text-center">Save & Load</h2>
                     <div class="flex flex-col gap-4">
                         <button id="exportPdfBtn" class="w-full bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Export as PDF</button>
                         <button id="exportJsonBtn" class="w-full bg-stone-700 text-white font-bold py-2 px-4 rounded-lg">Export as JSON</button>
@@ -328,6 +491,44 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Spells Modal -->
+    <div id="spells-modal" class="modal hidden">
+        <div class="modal-content stat-card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Spells</h2>
+                <button id="closeSpellsModalBtn" class="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">&times;</button>
+            </div>
+            
+            <div id="spell-stats-container" class="grid grid-cols-3 gap-2 text-center text-sm mb-4">
+                <div class="p-2 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <label class="text-sm font-medium text-stone-500">Ability</label>
+                    <select id="spellcastingAbility" class="w-full p-1 text-center bg-transparent border-none" onchange="updateCharacterSheet()">
+                        <option value="INT">INT</option>
+                        <option value="WIS">WIS</option>
+                        <option value="CHA">CHA</option>
+                    </select>
+                </div>
+                <div class="p-2 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div id="spellSaveDc" class="font-bold text-xl">8</div>
+                    <div class="text-stone-500 text-xs">Spell Save DC</div>
+                </div>
+                <div class="p-2 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div id="spellAttackBonus" class="font-bold text-xl">+2</div>
+                    <div class="text-stone-500 text-xs">Spell Attack Bonus</div>
+                </div>
+            </div>
+            
+            <h3 class="text-xl font-bold text-stone-600 dark:text-stone-400 mb-2">Spell Slots</h3>
+            <div id="spell-slots-container"></div>
+
+            <div class="flex justify-between items-center my-4">
+                <h3 class="text-xl font-bold text-stone-600 dark:text-stone-400">Prepared Spells</h3>
+                <button id="addSpellBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+            </div>
+            <div id="prepared-spells-container" class="flex flex-col gap-2"></div>
+        </div>
     </div>
 
     <script>
@@ -377,6 +578,30 @@
             'Stunned': 'You are incapacitated and can\'t move, and can only speak falteringly. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage.',
             'Unconscious': 'You are incapacitated, can\'t move or speak, and are unaware of your surroundings. You drop whatever you are holding and fall prone. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage. Any attack that hits you is a critical hit if the attacker is within 5 feet of you.'
         };
+        
+        const spellSlotsByLevel = [
+            [], // Level 0 (Cantrips)
+            [2, 3, 4, 4, 4, 4, 4, 4, 4], // Level 1
+            [2, 3, 4, 4, 4, 4, 4, 4, 4], // Level 2
+            [2, 4, 4, 4, 4, 4, 4, 4, 4], // Level 3
+            [3, 4, 4, 4, 4, 4, 4, 4, 4], // Level 4
+            [3, 4, 2, 4, 4, 4, 4, 4, 4], // Level 5
+            [3, 4, 3, 4, 4, 4, 4, 4, 4], // Level 6
+            [3, 4, 3, 2, 4, 4, 4, 4, 4], // Level 7
+            [3, 4, 3, 3, 4, 4, 4, 4, 4], // Level 8
+            [3, 4, 3, 3, 2, 4, 4, 4, 4], // Level 9
+            [3, 4, 3, 3, 3, 4, 4, 4, 4], // Level 10
+            [4, 4, 3, 3, 3, 2, 4, 4, 4], // Level 11
+            [4, 4, 3, 3, 3, 2, 4, 4, 4], // Level 12
+            [4, 4, 3, 3, 3, 1, 1, 4, 4], // Level 13
+            [4, 4, 3, 3, 3, 1, 1, 4, 4], // Level 14
+            [4, 4, 3, 3, 3, 2, 1, 4, 4], // Level 15
+            [4, 4, 3, 3, 3, 2, 1, 4, 4], // Level 16
+            [4, 4, 3, 3, 3, 2, 1, 1, 4], // Level 17
+            [4, 4, 3, 3, 3, 2, 1, 1, 4], // Level 18
+            [4, 4, 3, 3, 3, 2, 2, 1, 4], // Level 19
+            [4, 4, 3, 3, 3, 2, 2, 2, 4], // Level 20
+        ];
         
         function createStatBlock(container, id, label) {
             const block = document.createElement('div');
@@ -529,7 +754,43 @@
                 updateConditionDescription(conditionId);
             }
         }
+        
+        function createSpellSlotBlock(container, level, total, used) {
+            const block = document.createElement('div');
+            block.className = 'flex items-center mb-2';
+            block.innerHTML = `
+                <div class="font-bold text-sm text-stone-600 dark:text-stone-400 w-16">Lvl ${level}</div>
+                <input type="number" id="slots-total-${level}" class="w-12 text-center p-1 border border-stone-300 dark:border-stone-600 rounded-md text-sm" value="${total}" min="0" oninput="updateSpellSlots(${level}, this.value)">
+                <span class="mx-2">/</span>
+                <div class="flex flex-grow items-center" id="slots-used-${level}"></div>
+            `;
+            container.appendChild(block);
+            const usedSlotsContainer = document.getElementById(`slots-used-${level}`);
+            for (let j = 0; j < total; j++) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'w-4 h-4 ml-1 accent-purple-500';
+                if (j < used) {
+                    checkbox.checked = true;
+                }
+                usedSlotsContainer.appendChild(checkbox);
+            }
+        }
 
+        function createPreparedSpellBlock(container, data = {}) {
+            const spellId = data.id || `prepared-spell-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const block = document.createElement('div');
+            block.className = 'p-2 border border-stone-300 dark:border-stone-600 rounded-md flex flex-col prepared-spell-block';
+            block.id = spellId;
+            block.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <input type="text" id="${spellId}-name" class="header-input font-bold text-md flex-grow" placeholder="Spell Name" value="${data.name || ''}">
+                    <button onclick="document.getElementById('${spellId}').remove();" class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold ml-2">&times;</button>
+                </div>
+                <textarea id="${spellId}-description" class="w-full h-20 p-1 border border-stone-300 dark:border-stone-600 rounded-md text-sm" placeholder="Spell Description">${data.description || ''}</textarea>
+            `;
+            container.appendChild(block);
+        }
 
         function updateActionToHit(actionId, abilityMods, proficiencyBonus) {
             const statSelect = document.getElementById(`${actionId}-stat`);
@@ -563,6 +824,62 @@
             }
         }
 
+        function getProficiencyBonus(level) {
+            if (level >= 1 && level <= 4) return 2;
+            if (level >= 5 && level <= 8) return 3;
+            if (level >= 9 && level <= 12) return 4;
+            if (level >= 13 && level <= 16) return 5;
+            if (level >= 17 && level <= 20) return 6;
+            return 2; // Default for invalid levels
+        }
+
+        function updateSpellSlots(level = null, total = null) {
+            const characterLevel = parseInt(document.getElementById('characterLevel').value) || 1;
+            const spellSlots = spellSlotsByLevel[characterLevel - 1] || [];
+            
+            for (let i = 0; i <= 9; i++) {
+                const totalInput = document.getElementById(`slots-total-${i}`);
+                if (totalInput) {
+                    let newTotal = 0;
+                    if (i > 0 && spellSlots[i-1]) {
+                        newTotal = spellSlots[i-1];
+                    }
+                    if (level === i && total !== null) {
+                         newTotal = total;
+                    }
+                    totalInput.value = newTotal;
+
+                    const usedSlotsContainer = document.getElementById(`slots-used-${i}`);
+                    if (usedSlotsContainer) {
+                        const currentUsed = Array.from(usedSlotsContainer.children).filter(cb => cb.checked).length;
+                        usedSlotsContainer.innerHTML = '';
+                        for (let j = 0; j < newTotal; j++) {
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.className = 'w-4 h-4 ml-1 accent-purple-500';
+                            checkbox.checked = j < currentUsed;
+                            usedSlotsContainer.appendChild(checkbox);
+                        }
+                    }
+                }
+            }
+        }
+        
+        function toggleCollapse(id) {
+            const content = document.getElementById(`${id}-content`);
+            const icon = document.querySelector(`#${id} .toggle-icon`);
+            content.classList.toggle('hidden');
+            icon.textContent = content.classList.contains('hidden') ? '▼' : '▲';
+        }
+
+        function showSpellsModal() {
+            document.getElementById('spells-modal').classList.remove('hidden');
+        }
+
+        function hideSpellsModal() {
+            document.getElementById('spells-modal').classList.add('hidden');
+        }
+
         function initializeSheet() {
             const abilityContainer = document.getElementById('ability-scores-container');
             abilities.forEach(ability => createStatBlock(abilityContainer, ability.abbr.toLowerCase(), ability.name));
@@ -588,6 +905,10 @@
             document.getElementById('addConditionBtn').addEventListener('click', () => {
                 createConditionBlock(document.getElementById('conditions-container'));
             });
+            
+            document.getElementById('addSpellBtn').addEventListener('click', () => {
+                createPreparedSpellBlock(document.getElementById('prepared-spells-container'));
+            });
 
             document.getElementById('exportPdfBtn').addEventListener('click', exportToPdf);
             document.getElementById('exportJsonBtn').addEventListener('click', exportToJson);
@@ -596,8 +917,36 @@
             });
             document.getElementById('importJsonInput').addEventListener('change', importFromJson);
             
+            document.getElementById('openSpellsModalBtn').addEventListener('click', showSpellsModal);
+            document.getElementById('closeSpellsModalBtn').addEventListener('click', hideSpellsModal);
+
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+            for (let i = 0; i <= 9; i++) {
+                 createSpellSlotBlock(document.getElementById('spell-slots-container'), i, 0, 0);
+            }
+            
+            // Initial theme check
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark');
+                document.getElementById('theme-icon').textContent = '☀️';
+            }
+            
             updateCharacterSheet();
         }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if (document.body.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                icon.textContent = '☀️';
+            } else {
+                localStorage.setItem('theme', 'light');
+                icon.textContent = '�';
+            }
+        }
+
 
         function getModifier(score) {
             return Math.floor((score - 10) / 2);
@@ -608,7 +957,10 @@
         }
 
         function updateCharacterSheet() {
-            const proficiencyBonus = parseInt(document.getElementById('proficiencyBonus').value) || 0;
+            const characterLevel = parseInt(document.getElementById('characterLevel').value) || 1;
+            const proficiencyBonus = getProficiencyBonus(characterLevel);
+            document.getElementById('proficiencyBonus').value = proficiencyBonus;
+
             const abilityScores = {};
             const abilityMods = {};
 
@@ -668,6 +1020,16 @@
             });
 
             updateAttunementCount();
+
+            // Spells
+            const spellAbility = document.getElementById('spellcastingAbility').value;
+            const spellMod = abilityMods[spellAbility];
+            const spellSaveDc = 8 + proficiencyBonus + spellMod;
+            const spellAttackBonus = proficiencyBonus + spellMod;
+            
+            document.getElementById('spellSaveDc').textContent = spellSaveDc;
+            document.getElementById('spellAttackBonus').textContent = formatBonus(spellAttackBonus);
+            updateSpellSlots();
         }
         
         async function exportToPdf() {
@@ -675,7 +1037,14 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
 
-            const canvas = await html2canvas(mainContent, { scale: 2 });
+            // Hide the spells modal and collapse the sections before taking the screenshot
+            hideSpellsModal();
+            const characterDetailsCollapsed = document.getElementById('character-details-content').classList.contains('hidden');
+            const skillsCollapsed = document.getElementById('skills-collapsible-content').classList.contains('hidden');
+            if (!characterDetailsCollapsed) toggleCollapse('character-details');
+            if (!skillsCollapsed) toggleCollapse('skills-collapsible');
+
+            const canvas = await html2canvas(document.body, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
             const imgProps = doc.getImageProperties(imgData);
             const pdfWidth = doc.internal.pageSize.getWidth();
@@ -683,13 +1052,27 @@
 
             doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             doc.save('dnd-character-sheet.pdf');
+
+            // Restore the state after saving
+            if (!characterDetailsCollapsed) toggleCollapse('character-details');
+            if (!skillsCollapsed) toggleCollapse('skills-collapsible');
         }
 
         function exportToJson() {
             const data = {
+                theme: document.body.classList.contains('dark') ? 'dark' : 'light',
+                collapsedSections: {
+                    characterDetails: document.getElementById('character-details-content').classList.contains('hidden'),
+                    skills: document.getElementById('skills-collapsible-content').classList.contains('hidden'),
+                    proficiencies: document.getElementById('proficiencies-collapsible-content').classList.contains('hidden'),
+                    inventory: document.getElementById('inventory-collapsible-content').classList.contains('hidden'),
+                    notes: document.getElementById('notes-collapsible-content').classList.contains('hidden'),
+                    backstory: document.getElementById('backstory-collapsible-content').classList.contains('hidden'),
+                },
                 characterInfo: {
                     characterName: document.getElementById('characterName').value,
-                    classLevel: document.getElementById('classLevel').value,
+                    characterClass: document.getElementById('characterClass').value,
+                    characterLevel: document.getElementById('characterLevel').value,
                     background: document.getElementById('background').value,
                     playerName: document.getElementById('playerName').value,
                     race: document.getElementById('race').value,
@@ -714,6 +1097,7 @@
                 notes: document.getElementById('notes').value,
                 backstory: document.getElementById('backstory').value,
                 inventory: document.getElementById('inventory').value,
+                proficiencies: document.getElementById('proficiencies').value,
                 attunedItems: {
                     maxAttunement: document.getElementById('maxAttunement').value,
                     items: Array.from(document.querySelectorAll('#attunedItems-container input[type="text"]')).map(input => input.value),
@@ -724,8 +1108,25 @@
                     ep: document.getElementById('ep').value,
                     gp: document.getElementById('gp').value,
                     pp: document.getElementById('pp').value,
+                },
+                spells: {
+                    spellcastingAbility: document.getElementById('spellcastingAbility').value,
+                    prepared: Array.from(document.querySelectorAll('#prepared-spells-container .prepared-spell-block')).map(el => {
+                        const id = el.id;
+                        return {
+                            id: id,
+                            name: document.getElementById(`${id}-name`).value,
+                            description: document.getElementById(`${id}-description`).value,
+                        };
+                    }),
+                    spellSlots: {},
                 }
             };
+            for (let i = 0; i <= 9; i++) {
+                const total = document.getElementById(`slots-total-${i}`).value;
+                const used = Array.from(document.querySelectorAll(`#slots-used-${i} input[type="checkbox"]:checked`)).length;
+                data.spells.spellSlots[i] = { total: total, used: used };
+            }
 
             abilities.forEach(ability => {
                 const abbr = ability.abbr.toLowerCase();
@@ -794,8 +1195,35 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     
+                    if (data.theme === 'dark') {
+                        document.body.classList.add('dark');
+                        document.getElementById('theme-icon').textContent = '☀️';
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.body.classList.remove('dark');
+                        document.getElementById('theme-icon').textContent = '🌙';
+                        localStorage.setItem('theme', 'light');
+                    }
+
+                    if (data.collapsedSections) {
+                        const sections = ['character-details', 'skills-collapsible', 'proficiencies-collapsible', 'inventory-collapsible', 'notes-collapsible', 'backstory-collapsible'];
+                        sections.forEach(id => {
+                            const content = document.getElementById(`${id}-content`);
+                            const icon = document.querySelector(`#${id} .toggle-icon`);
+                            if (data.collapsedSections[id.replace(/-collapsible/, '')]) {
+                                content.classList.add('hidden');
+                                icon.textContent = '▼';
+                            } else {
+                                content.classList.remove('hidden');
+                                icon.textContent = '▲';
+                            }
+                        });
+                    }
+
+
                     document.getElementById('characterName').value = data.characterInfo.characterName;
-                    document.getElementById('classLevel').value = data.characterInfo.classLevel;
+                    document.getElementById('characterClass').value = data.characterInfo.characterClass;
+                    document.getElementById('characterLevel').value = data.characterInfo.characterLevel;
                     document.getElementById('background').value = data.characterInfo.background;
                     document.getElementById('playerName').value = data.characterInfo.playerName;
                     document.getElementById('race').value = data.characterInfo.race;
@@ -808,8 +1236,7 @@
                     document.getElementById('currentHP').value = data.combatStats.currentHP;
                     document.getElementById('maxHP').value = data.combatStats.maxHP;
                     document.getElementById('hitDice').value = data.combatStats.hitDice;
-                    document.getElementById('proficiencyBonus').value = data.combatStats.proficiencyBonus;
-
+                    
                     abilities.forEach(ability => {
                         const abbr = ability.abbr.toLowerCase();
                         document.getElementById(abbr).value = data.abilityScores[abbr] || 10;
@@ -834,6 +1261,7 @@
 
                     document.getElementById('notes').value = data.notes;
                     document.getElementById('backstory').value = data.backstory;
+                    document.getElementById('proficiencies').value = data.proficiencies;
 
                     const actionsContainer = document.getElementById('actions-container');
                     actionsContainer.innerHTML = '';
@@ -859,6 +1287,32 @@
                     if (data.conditions && Array.isArray(data.conditions)) {
                         data.conditions.forEach(conditionData => createConditionBlock(conditionsContainer, conditionData));
                     }
+                    
+                    const preparedSpellsContainer = document.getElementById('prepared-spells-container');
+                    preparedSpellsContainer.innerHTML = '';
+                    if (data.spells && Array.isArray(data.spells.prepared)) {
+                        data.spells.prepared.forEach(spellData => createPreparedSpellBlock(preparedSpellsContainer, spellData));
+                    }
+
+                    const spellSlotsContainer = document.getElementById('spell-slots-container');
+                    if (data.spells && data.spells.spellSlots) {
+                         for (let i = 0; i <= 9; i++) {
+                             if (data.spells.spellSlots[i]) {
+                                 document.getElementById(`slots-total-${i}`).value = data.spells.spellSlots[i].total;
+                                 const usedSlotsContainer = document.getElementById(`slots-used-${i}`);
+                                 usedSlotsContainer.innerHTML = '';
+                                 for (let j = 0; j < data.spells.spellSlots[i].total; j++) {
+                                     const checkbox = document.createElement('input');
+                                     checkbox.type = 'checkbox';
+                                     checkbox.className = 'w-4 h-4 ml-1 accent-purple-500';
+                                     checkbox.checked = j < data.spells.spellSlots[i].used;
+                                     usedSlotsContainer.appendChild(checkbox);
+                                 }
+                             }
+                         }
+                    }
+                    
+                    document.getElementById('spellcastingAbility').value = data.spells.spellcastingAbility;
 
                     updateCharacterSheet();
                     alert('Character data imported successfully!');
@@ -873,3 +1327,4 @@
     </script>
 </body>
 </html>
+�
