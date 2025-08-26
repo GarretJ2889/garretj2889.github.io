@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mate:ital@0;1&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A three-column dashboard layout is used for intuitive organization, mirroring traditional character sheets. Column 1 handles core stats (Abilities, Skills) which drive calculations. Column 2 focuses on identity and combat (Info, HP, AC). Column 3 contains descriptive text fields (Traits, Proficiencies). This structure groups related information, prioritizes frequently-used stats, and provides a clear user flow from core stats to derived combat values. All calculations are updated instantly on input change for a seamless experience. -->
-    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
+    <!-- Application Structure Plan: A reorganized dashboard layout. The top section now highlights Character Details and Hit Points for immediate visibility. The main content is split into a three-column grid. Column 1 groups core stats (Abilities, Saving Throws, Skills). Column 2 contains combat essentials (AC, Initiative, Speed, Actions) followed by descriptive traits (Features & Traits). Column 3 holds descriptive and utility sections (Proficiencies, Inventory, Notes, Backstory, Save/Load). This new structure provides a more intuitive flow, starting with key identity and vitals, then grouping related mechanics and finally, utility and descriptive information. -->
+    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. A new Inventory section with currency fields has been added. The actions section now also includes a dropdown to specify the action type (Action, Bonus Action, Reaction). A new Backstory section has been added for narrative text. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -109,6 +109,15 @@
         .action-row:last-child {
             border-bottom: none;
         }
+        .currency-input {
+            width: 100%;
+            text-align: center;
+            border: 1px solid #D6D3D1;
+            border-radius: 0.375rem;
+            padding: 0.25rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -118,6 +127,48 @@
             <h1 class="text-4xl md:text-5xl font-bold text-stone-800">D&D 5e Character Sheet</h1>
             <p class="text-stone-600 mt-2">An interactive sheet to manage your character's statistics and abilities.</p>
         </header>
+        
+        <!-- TOP SECTION: CHARACTER DETAILS & HP -->
+        <div class="stat-card mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="sm:col-span-3">
+                    <label for="characterName" class="text-sm font-medium text-stone-500">Character Name</label>
+                    <input type="text" id="characterName" class="header-input text-2xl" placeholder="Lancelot">
+                </div>
+                <div>
+                    <label for="classLevel" class="text-sm font-medium text-stone-500">Class & Level</label>
+                    <input type="text" id="classLevel" class="header-input" placeholder="Paladin 5">
+                </div>
+                <div>
+                    <label for="background" class="text-sm font-medium text-stone-500">Background</label>
+                    <input type="text" id="background" class="header-input" placeholder="Noble">
+                </div>
+                <div>
+                    <label for="playerName" class="text-sm font-medium text-stone-500">Player Name</label>
+                    <input type="text" id="playerName" class="header-input" placeholder="Arthur">
+                </div>
+                <div>
+                    <label for="race" class="text-sm font-medium text-stone-500">Race</label>
+                    <input type="text" id="race" class="header-input" placeholder="Human">
+                </div>
+                <div>
+                    <label for="alignment" class="text-sm font-medium text-stone-500">Alignment</label>
+                    <input type="text" id="alignment" class="header-input" placeholder="Lawful Good">
+                </div>
+                <div>
+                    <label for="experience" class="text-sm font-medium text-stone-500">Experience Points</label>
+                    <input type="number" id="experience" class="header-input" placeholder="6500">
+                </div>
+            </div>
+             <div class="stat-card border border-stone-200 p-4 mt-6">
+                <label class="text-sm font-medium text-stone-500">Hit Points</label>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                     <input type="number" id="currentHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="HP">
+                     <span class="text-stone-500">/</span>
+                     <input type="number" id="maxHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="Max">
+                </div>
+            </div>
+        </div>
 
         <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
@@ -134,45 +185,17 @@
                     <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Saving Throws</h2>
                     <div id="saving-throws-container"></div>
                 </div>
+
+                <!-- SKILLS -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Skills</h2>
+                    <div id="skills-container"></div>
+                </div>
             </div>
 
-            <!-- COLUMN 2: CHARACTER & COMBAT -->
+            <!-- COLUMN 2: COMBAT -->
             <div class="flex flex-col gap-6">
-                <!-- CHARACTER INFO -->
-                <div class="stat-card">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="sm:col-span-3">
-                            <label for="characterName" class="text-sm font-medium text-stone-500">Character Name</label>
-                            <input type="text" id="characterName" class="header-input text-2xl" placeholder="Lancelot">
-                        </div>
-                        <div>
-                            <label for="classLevel" class="text-sm font-medium text-stone-500">Class & Level</label>
-                            <input type="text" id="classLevel" class="header-input" placeholder="Paladin 5">
-                        </div>
-                        <div>
-                            <label for="background" class="text-sm font-medium text-stone-500">Background</label>
-                            <input type="text" id="background" class="header-input" placeholder="Noble">
-                        </div>
-                        <div>
-                            <label for="playerName" class="text-sm font-medium text-stone-500">Player Name</label>
-                            <input type="text" id="playerName" class="header-input" placeholder="Arthur">
-                        </div>
-                        <div>
-                            <label for="race" class="text-sm font-medium text-stone-500">Race</label>
-                            <input type="text" id="race" class="header-input" placeholder="Human">
-                        </div>
-                        <div>
-                            <label for="alignment" class="text-sm font-medium text-stone-500">Alignment</label>
-                            <input type="text" id="alignment" class="header-input" placeholder="Lawful Good">
-                        </div>
-                        <div>
-                            <label for="experience" class="text-sm font-medium text-stone-500">Experience Points</label>
-                            <input type="number" id="experience" class="header-input" placeholder="6500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- COMBAT STATS -->
+                <!-- COMBAT STATS (Remaining) -->
                 <div class="stat-card">
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div class="combat-stat-box">
@@ -188,14 +211,6 @@
                             <div class="combat-stat-label">Speed</div>
                         </div>
                     </div>
-                    <div class="stat-card border border-stone-200 p-4">
-                        <label class="text-sm font-medium text-stone-500">Hit Points</label>
-                        <div class="flex items-center justify-center gap-2 mt-2">
-                             <input type="number" id="currentHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="HP">
-                             <span class="text-stone-500">/</span>
-                             <input type="number" id="maxHP" class="w-full text-center text-xl p-2 border border-stone-300 rounded" placeholder="Max">
-                        </div>
-                    </div>
                      <div class="grid grid-cols-2 gap-4 mt-4">
                         <div class="stat-card border border-stone-200 p-4">
                             <label class="text-sm font-medium text-stone-500">Hit Dice</label>
@@ -207,11 +222,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Features & Traits</h2>
-                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your racial traits, class features, feats, etc."></textarea>
-                </div>
 
                 <!-- ACTIONS -->
                 <div class="stat-card">
@@ -221,24 +231,58 @@
                     </div>
                     <div id="actions-container"></div>
                 </div>
+                
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Features & Traits</h2>
+                    <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your racial traits, class features, feats, etc."></textarea>
+                </div>
             </div>
 
-            <!-- COLUMN 3: SKILLS & PROFICIENCIES -->
+            <!-- COLUMN 3: DESCRIPTIVE & UTILITY -->
             <div class="flex flex-col gap-6">
-                <!-- SKILLS -->
-                <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Skills</h2>
-                    <div id="skills-container"></div>
-                </div>
                 <div class="stat-card">
                     <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Other Proficiencies & Languages</h2>
                     <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your armor, weapon, and tool proficiencies, as well as languages."></textarea>
+                </div>
+
+                <!-- INVENTORY -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Inventory & Currency</h2>
+                    <div class="grid grid-cols-5 gap-2 mb-4">
+                        <div>
+                            <label for="cp" class="text-sm font-medium text-stone-500">CP</label>
+                            <input type="number" id="cp" class="currency-input" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="sp" class="text-sm font-medium text-stone-500">SP</label>
+                            <input type="number" id="sp" class="currency-input" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="ep" class="text-sm font-medium text-stone-500">EP</label>
+                            <input type="number" id="ep" class="currency-input" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="gp" class="text-sm font-medium text-stone-500">GP</label>
+                            <input type="number" id="gp" class="currency-input" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="pp" class="text-sm font-medium text-stone-500">PP</label>
+                            <input type="number" id="pp" class="currency-input" placeholder="0">
+                        </div>
+                    </div>
+                    <textarea id="inventory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your items here..."></textarea>
                 </div>
 
                 <!-- NOTES -->
                 <div class="stat-card">
                     <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Notes</h2>
                     <textarea id="notes" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Add any important notes, plot points, or reminders here."></textarea>
+                </div>
+
+                <!-- BACKSTORY -->
+                <div class="stat-card">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Backstory</h2>
+                    <textarea id="backstory" class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="Describe your character's history, motivations, and goals."></textarea>
                 </div>
                 
                 <!-- SAVE & LOAD -->
@@ -342,6 +386,12 @@
                     <input type="text" id="${actionId}-name" class="header-input" value="${data.name || ''}" placeholder="e.g., Longsword Attack">
                 </div>
                 <div class="flex flex-col">
+                    <label for="${actionId}-type" class="text-sm font-medium text-stone-500">Type</label>
+                    <select id="${actionId}-type" class="w-full p-2 border border-stone-300 rounded-md mb-2" onchange="updateCharacterSheet()">
+                        <option value="Action" ${data.type === 'Action' ? 'selected' : ''}>Action</option>
+                        <option value="Bonus Action" ${data.type === 'Bonus Action' ? 'selected' : ''}>Bonus Action</option>
+                        <option value="Reaction" ${data.type === 'Reaction' ? 'selected' : ''}>Reaction</option>
+                    </select>
                     <label for="${actionId}-stat" class="text-sm font-medium text-stone-500">To Hit</label>
                     <div class="flex items-center gap-2">
                          <span class="text-sm font-bold text-stone-500">P</span>
@@ -484,7 +534,16 @@
                 savingThrows: {},
                 skills: {},
                 actions: [],
-                notes: document.getElementById('notes').value
+                notes: document.getElementById('notes').value,
+                backstory: document.getElementById('backstory').value,
+                inventory: document.getElementById('inventory').value,
+                currency: {
+                    cp: document.getElementById('cp').value,
+                    sp: document.getElementById('sp').value,
+                    ep: document.getElementById('ep').value,
+                    gp: document.getElementById('gp').value,
+                    pp: document.getElementById('pp').value,
+                }
             };
 
             abilities.forEach(ability => {
@@ -505,6 +564,7 @@
                 data.actions.push({
                     id: row.id,
                     name: document.getElementById(`${row.id}-name`).value,
+                    type: document.getElementById(`${row.id}-type`).value,
                     stat: document.getElementById(`${row.id}-stat`).value,
                     proficient: document.getElementById(`${row.id}-prof`).checked,
                     damage: document.getElementById(`${row.id}-damage`).value,
@@ -560,7 +620,15 @@
                         }
                     });
 
+                    document.getElementById('inventory').value = data.inventory || '';
+                    document.getElementById('cp').value = data.currency.cp;
+                    document.getElementById('sp').value = data.currency.sp;
+                    document.getElementById('ep').value = data.currency.ep;
+                    document.getElementById('gp').value = data.currency.gp;
+                    document.getElementById('pp').value = data.currency.pp;
+
                     document.getElementById('notes').value = data.notes;
+                    document.getElementById('backstory').value = data.backstory;
 
                     const actionsContainer = document.getElementById('actions-container');
                     actionsContainer.innerHTML = '';
