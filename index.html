@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mate:ital@0;1&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A reorganized dashboard layout. The top section now highlights Character Details and Hit Points for immediate visibility. The main content is split into a three-column grid. Column 1 groups core stats (Abilities, Saving Throws, Skills). Column 2 contains combat essentials (AC, Initiative, Speed, Actions) followed by descriptive traits (Features & Traits). Column 3 holds descriptive and utility sections (Proficiencies, Inventory, Notes, Backstory, Save/Load). This new structure provides a more intuitive flow, starting with key identity and vitals, then grouping related mechanics and finally, utility and descriptive information. -->
-    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. A new Inventory section with currency fields has been added. The actions section now also includes a dropdown to specify the action type (Action, Bonus Action, Reaction). A new Backstory section has been added for narrative text. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
+    <!-- Application Structure Plan: A reorganized dashboard layout. The top section now highlights Character Details and Hit Points for immediate visibility. The main content is split into a three-column grid. Column 1 groups core stats (Abilities, Saving Throws, Skills). Column 2 contains combat essentials (AC, Initiative, Speed) followed by a new Conditions section, Actions, and descriptive traits (Features & Traits). Column 3 holds descriptive and utility sections (Proficiencies, Inventory, Notes, Backstory, Save/Load). This new structure provides a more intuitive flow, starting with key identity and vitals, then grouping related mechanics and finally, utility and descriptive information. -->
+    <!-- Visualization & Content Choices: The source report (a guide for a spreadsheet) is translated into an interactive form. Goal: Inform/Organize -> Presentation: HTML forms with inputs and labels. Interaction: Direct user input in text/number fields and checkboxes triggers real-time calculations via vanilla JavaScript. The application now supports expertise, which doubles the proficiency bonus, further enhancing its utility. The new Actions section allows users to add and manage custom attacks, with the "To Hit" bonus calculated dynamically based on a selected ability score and a proficiency checkbox. A new Notes section has been added for general character information. A new Inventory section with currency and attunement fields has been added. The actions section now also includes a dropdown to specify the action type (Action, Bonus Action, Reaction). A new Backstory section has been added for narrative text. A new button and dynamic fields have been added to the Skills section to allow for homebrew skills. All new fields are included in the JSON save/load process. A new Conditions section has been added with a dropdown for standard D&D conditions and a description field that updates automatically. Finally, a Save & Load section has been implemented, offering a one-way PDF export and a robust, two-way JSON export/import for true data persistence. Disadvantage checkboxes have been added to all skills. All combat stats (AC, Initiative, Speed) are now editable. The attunement limit is now an editable field, allowing for a dynamic maximum count. Justification: This is the most direct and effective way to create a functional character sheet. It avoids unnecessary complexity from visualization libraries like Chart.js, focusing instead on utility and clarity. The core value is the automatic calculation of modifiers and bonuses, which JS handles perfectly. The addition of JSON import/export provides a practical solution for data persistence that is not feasible with a PDF. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -118,6 +118,11 @@
             font-size: 1.25rem;
             font-weight: 600;
         }
+        .condition-block {
+            border-bottom: 1px dashed #D6D3D1;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -188,8 +193,12 @@
 
                 <!-- SKILLS -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Skills</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-stone-800 text-center">Skills</h2>
+                        <button id="addSkillBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+                    </div>
                     <div id="skills-container"></div>
+                    <div id="homebrew-skills-container"></div>
                 </div>
             </div>
 
@@ -199,11 +208,11 @@
                 <div class="stat-card">
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div class="combat-stat-box">
-                            <div id="armorClassDisplay" class="combat-stat-value">10</div>
+                            <input type="number" id="armorClassDisplay" class="combat-stat-value w-full text-center bg-transparent border-none focus:ring-0" value="10" oninput="updateCharacterSheet()">
                             <div class="combat-stat-label">Armor Class</div>
                         </div>
                         <div class="combat-stat-box">
-                            <div id="initiativeDisplay" class="combat-stat-value">+0</div>
+                            <input type="number" id="initiativeDisplay" class="combat-stat-value w-full text-center bg-transparent border-none focus:ring-0" value="0" oninput="updateCharacterSheet()">
                             <div class="combat-stat-label">Initiative</div>
                         </div>
                         <div class="combat-stat-box">
@@ -221,6 +230,15 @@
                             <input type="number" id="proficiencyBonus" class="w-full text-center text-lg p-1 mt-1 border border-stone-300 rounded" value="2" oninput="updateCharacterSheet()">
                         </div>
                     </div>
+                </div>
+                
+                <!-- CONDITIONS -->
+                <div class="stat-card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-stone-800 text-center">Conditions</h2>
+                        <button id="addConditionBtn" class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">+</button>
+                    </div>
+                    <div id="conditions-container" class="flex flex-col gap-4"></div>
                 </div>
 
                 <!-- ACTIONS -->
@@ -245,9 +263,22 @@
                     <textarea class="w-full h-48 p-2 border border-stone-300 rounded-md" placeholder="List your armor, weapon, and tool proficiencies, as well as languages."></textarea>
                 </div>
 
-                <!-- INVENTORY -->
+                <!-- INVENTORY & ATTUNEMENT -->
                 <div class="stat-card">
-                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Inventory & Currency</h2>
+                    <h2 class="text-2xl font-bold text-stone-800 mb-4 text-center">Inventory & Attunement</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-stone-600">Attuned Items</h3>
+                        <div class="flex items-center gap-2">
+                            <span id="attunementCount" class="text-sm font-bold text-stone-500">0/3</span>
+                            <button id="addAttunedBtn" class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-md font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <label for="maxAttunement" class="text-sm font-medium text-stone-500">Max Attuned Items</label>
+                        <input type="number" id="maxAttunement" class="w-16 p-1 border border-stone-300 rounded-md text-sm text-center" value="3" min="0" oninput="updateAttunementCount()">
+                    </div>
+                    <div id="attunedItems-container" class="mb-4 flex flex-col gap-2"></div>
+                    <h3 class="text-xl font-bold text-stone-600 mb-2">General Items</h3>
                     <div class="grid grid-cols-5 gap-2 mb-4">
                         <div>
                             <label for="cp" class="text-sm font-medium text-stone-500">CP</label>
@@ -330,8 +361,23 @@
             { name: 'Survival', ability: 'WIS' },
         ];
         
-        let actionCount = 0;
-
+        const conditions = {
+            'Blinded': 'You cannot see and automatically fail ability checks that require sight. Attack rolls against you have advantage, and your attack rolls have disadvantage.',
+            'Charmed': 'You are charmed. You can\'t attack the charmer or target them with harmful abilities or magical effects. The charmer has advantage on ability checks to interact socially with you.',
+            'Deafened': 'You cannot hear and automatically fail any ability checks that require hearing.',
+            'Frightened': 'You have disadvantage on ability checks and attack rolls while the source of your fear is within line of sight. You can\'t willingly move closer to the source of your fear.',
+            'Grappled': 'Your speed becomes 0, and you cannot benefit from any bonus to your speed. The condition ends if the grappler is incapacitated or if you are removed from the grappler\'s reach.',
+            'Incapacitated': 'You can\'t take actions or reactions.',
+            'Invisible': 'You are impossible to see without the aid of magic or a special sense. For the purpose of hiding, you are heavily obscured. Attack rolls against you have disadvantage, and your attack rolls have advantage.',
+            'Paralyzed': 'You are incapacitated and can\'t move or speak. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage. Any attack that hits you is a critical hit if the attacker is within 5 feet of you.',
+            'Petrified': 'You are transformed into a solid inanimate substance. You are incapacitated and can\'t move or speak. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage. You have resistance to all damage. You are immune to poison and disease.',
+            'Poisoned': 'You have disadvantage on attack rolls and ability checks.',
+            'Prone': 'Your only movement option is to crawl, unless you get up and use half your speed to do so. You have disadvantage on attack rolls. Attack rolls against you have advantage if the attacker is within 5 feet, otherwise they have disadvantage.',
+            'Restrained': 'Your speed becomes 0, and you can\'t benefit from any bonus to your speed. You have disadvantage on attack rolls and Dexterity saving throws. Attack rolls against you have advantage.',
+            'Stunned': 'You are incapacitated and can\'t move, and can only speak falteringly. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage.',
+            'Unconscious': 'You are incapacitated, can\'t move or speak, and are unaware of your surroundings. You drop whatever you are holding and fall prone. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have advantage. Any attack that hits you is a critical hit if the attacker is within 5 feet of you.'
+        };
+        
         function createStatBlock(container, id, label) {
             const block = document.createElement('div');
             block.className = 'stat-block';
@@ -368,6 +414,8 @@
                     <input type="checkbox" id="${id}Prof" onchange="updateCharacterSheet()">
                     <span class="text-sm font-bold text-stone-500 ml-2">E</span>
                     <input type="checkbox" id="${id}Expertise" onchange="updateCharacterSheet()">
+                    <span class="text-sm font-bold text-stone-500 ml-2">D</span>
+                    <input type="checkbox" id="${id}Disadvantage" onchange="updateCharacterSheet()">
                     <label for="${id}Prof" class="stat-label ml-2">${skill.name} <span class="text-xs text-stone-400">(${skill.ability})</span></label>
                 </div>
                 <div id="${id}Bonus" class="skill-modifier-display">+0</div>
@@ -375,6 +423,35 @@
             container.appendChild(block);
         }
         
+        function createHomebrewSkillBlock(container, data = {}) {
+            const skillId = data.id || `homebrew-skill-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const block = document.createElement('div');
+            block.className = 'stat-block homebrew-skill';
+            block.id = skillId;
+            block.innerHTML = `
+                <div class="flex items-center gap-2 flex-grow">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-stone-500">P</span>
+                        <input type="checkbox" id="${skillId}-prof" onchange="updateCharacterSheet()" ${data.proficient ? 'checked' : ''}>
+                        <span class="text-sm font-bold text-stone-500 ml-2">E</span>
+                        <input type="checkbox" id="${skillId}-expertise" onchange="updateCharacterSheet()" ${data.expertise ? 'checked' : ''}>
+                        <span class="text-sm font-bold text-stone-500 ml-2">D</span>
+                        <input type="checkbox" id="${skillId}-disadvantage" onchange="updateCharacterSheet()" ${data.disadvantage ? 'checked' : ''}>
+                    </div>
+                    <input type="text" id="${skillId}-name" class="w-2/3 p-1 border border-stone-300 rounded-md text-sm" placeholder="Skill Name" value="${data.name || ''}" oninput="updateCharacterSheet()">
+                    <select id="${skillId}-ability" class="w-1/3 p-1 border border-stone-300 rounded-md text-sm" onchange="updateCharacterSheet()">
+                        ${abilities.map(ability => `<option value="${ability.abbr}" ${data.ability === ability.abbr ? 'selected' : ''}>${ability.abbr}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="${skillId}-bonus" class="skill-modifier-display">+0</div>
+                    <button onclick="document.getElementById('${skillId}').remove(); updateCharacterSheet();" class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button>
+                </div>
+            `;
+            container.appendChild(block);
+            updateCharacterSheet();
+        }
+
         function createActionBlock(container, data = {}) {
             const actionId = data.id || `action-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             const actionRow = document.createElement('div');
@@ -414,6 +491,46 @@
             updateCharacterSheet();
         }
 
+        function createAttunedItemBlock(container, data = '') {
+            const maxAttunement = parseInt(document.getElementById('maxAttunement').value) || 0;
+            if (container.children.length >= maxAttunement) {
+                alert(`You can only have up to ${maxAttunement} attuned items.`);
+                return;
+            }
+            const itemId = `attuned-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const itemRow = document.createElement('div');
+            itemRow.className = 'flex items-center gap-2';
+            itemRow.id = itemId;
+            itemRow.innerHTML = `
+                <input type="text" class="w-full p-2 border border-stone-300 rounded-md text-sm" value="${data}" placeholder="Item Name">
+                <button onclick="document.getElementById('${itemId}').remove(); updateAttunementCount();" class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button>
+            `;
+            container.appendChild(itemRow);
+            updateAttunementCount();
+        }
+        
+        function createConditionBlock(container, data = {}) {
+            const conditionId = data.id || `condition-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const block = document.createElement('div');
+            block.className = 'condition-block';
+            block.id = conditionId;
+            block.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <select id="${conditionId}-select" class="w-2/3 p-2 border border-stone-300 rounded-md" onchange="updateConditionDescription('${conditionId}')">
+                        <option value="">-- Select a Condition --</option>
+                        ${Object.keys(conditions).map(condition => `<option value="${condition}" ${data.name === condition ? 'selected' : ''}>${condition}</option>`).join('')}
+                    </select>
+                    <button onclick="document.getElementById('${conditionId}').remove();" class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">&times;</button>
+                </div>
+                <p id="${conditionId}-description" class="text-sm text-stone-600 italic px-2">${data.description || ''}</p>
+            `;
+            container.appendChild(block);
+            if (data.name) {
+                updateConditionDescription(conditionId);
+            }
+        }
+
+
         function updateActionToHit(actionId, abilityMods, proficiencyBonus) {
             const statSelect = document.getElementById(`${actionId}-stat`);
             const profCheckbox = document.getElementById(`${actionId}-prof`);
@@ -425,6 +542,24 @@
                 const isProficient = profCheckbox.checked;
                 const bonus = statMod + (isProficient ? proficiencyBonus : 0);
                 toHitDisplay.textContent = formatBonus(bonus);
+            }
+        }
+
+        function updateAttunementCount() {
+            const count = document.getElementById('attunedItems-container').children.length;
+            const maxAttunement = document.getElementById('maxAttunement').value || 3;
+            document.getElementById('attunementCount').textContent = `${count}/${maxAttunement}`;
+        }
+        
+        function updateConditionDescription(conditionId) {
+            const selectElement = document.getElementById(`${conditionId}-select`);
+            const descriptionElement = document.getElementById(`${conditionId}-description`);
+            const selectedCondition = selectElement.value;
+            
+            if (conditions[selectedCondition]) {
+                descriptionElement.textContent = conditions[selectedCondition];
+            } else {
+                descriptionElement.textContent = '';
             }
         }
 
@@ -440,6 +575,18 @@
             
             document.getElementById('addActionBtn').addEventListener('click', () => {
                 createActionBlock(document.getElementById('actions-container'));
+            });
+
+            document.getElementById('addAttunedBtn').addEventListener('click', () => {
+                createAttunedItemBlock(document.getElementById('attunedItems-container'));
+            });
+
+            document.getElementById('addSkillBtn').addEventListener('click', () => {
+                createHomebrewSkillBlock(document.getElementById('homebrew-skills-container'));
+            });
+            
+            document.getElementById('addConditionBtn').addEventListener('click', () => {
+                createConditionBlock(document.getElementById('conditions-container'));
             });
 
             document.getElementById('exportPdfBtn').addEventListener('click', exportToPdf);
@@ -485,16 +632,42 @@
                 const id = skill.name.replace(/\s+/g, '');
                 const isExpert = document.getElementById(`${id}Expertise`).checked;
                 const isProficient = document.getElementById(`${id}Prof`).checked;
-                const bonus = abilityMods[skill.ability] + (isExpert ? proficiencyBonus * 2 : (isProficient ? proficiencyBonus : 0));
+                const isDisadvantage = document.getElementById(`${id}Disadvantage`).checked;
+                let bonus = abilityMods[skill.ability] + (isExpert ? proficiencyBonus * 2 : (isProficient ? proficiencyBonus : 0));
+                
+                // Disadvantage logic (not affecting the modifier directly, but a status to show)
+                const bonusDisplay = document.getElementById(`${id}Bonus`);
+                if(isDisadvantage){
+                    bonusDisplay.style.color = '#B91C1C'; // Red
+                } else {
+                    bonusDisplay.style.color = '#166534'; // Green
+                }
+                
                 document.getElementById(`${id}Bonus`).textContent = formatBonus(bonus);
             });
-            
-            document.getElementById('armorClassDisplay').textContent = 10 + abilityMods['DEX'];
-            document.getElementById('initiativeDisplay').textContent = formatBonus(abilityMods['DEX']);
+
+            document.querySelectorAll('.homebrew-skill').forEach(skillElement => {
+                const id = skillElement.id;
+                const ability = document.getElementById(`${id}-ability`).value;
+                const isExpert = document.getElementById(`${id}-expertise`).checked;
+                const isProficient = document.getElementById(`${id}-prof`).checked;
+                const isDisadvantage = document.getElementById(`${id}-disadvantage`).checked;
+                let bonus = abilityMods[ability] + (isExpert ? proficiencyBonus * 2 : (isProficient ? proficiencyBonus : 0));
+
+                const bonusDisplay = document.getElementById(`${id}-bonus`);
+                 if(isDisadvantage){
+                    bonusDisplay.style.color = '#B91C1C'; // Red
+                } else {
+                    bonusDisplay.style.color = '#166534'; // Green
+                }
+                document.getElementById(`${id}-bonus`).textContent = formatBonus(bonus);
+            });
             
             document.querySelectorAll('.action-row').forEach(row => {
                 updateActionToHit(row.id, abilityMods, proficiencyBonus);
             });
+
+            updateAttunementCount();
         }
         
         async function exportToPdf() {
@@ -524,7 +697,9 @@
                     experience: document.getElementById('experience').value,
                 },
                 combatStats: {
+                    ac: document.getElementById('armorClassDisplay').value,
                     speed: document.getElementById('speed').value,
+                    initiative: document.getElementById('initiativeDisplay').value,
                     currentHP: document.getElementById('currentHP').value,
                     maxHP: document.getElementById('maxHP').value,
                     hitDice: document.getElementById('hitDice').value,
@@ -533,10 +708,16 @@
                 abilityScores: {},
                 savingThrows: {},
                 skills: {},
+                homebrewSkills: [],
+                conditions: [],
                 actions: [],
                 notes: document.getElementById('notes').value,
                 backstory: document.getElementById('backstory').value,
                 inventory: document.getElementById('inventory').value,
+                attunedItems: {
+                    maxAttunement: document.getElementById('maxAttunement').value,
+                    items: Array.from(document.querySelectorAll('#attunedItems-container input[type="text"]')).map(input => input.value),
+                },
                 currency: {
                     cp: document.getElementById('cp').value,
                     sp: document.getElementById('sp').value,
@@ -557,7 +738,28 @@
                 data.skills[id] = {
                     proficient: document.getElementById(`${id}Prof`).checked,
                     expertise: document.getElementById(`${id}Expertise`).checked,
+                    disadvantage: document.getElementById(`${id}Disadvantage`).checked,
                 };
+            });
+            
+            document.querySelectorAll('.homebrew-skill').forEach(skillElement => {
+                const id = skillElement.id;
+                data.homebrewSkills.push({
+                    id: id,
+                    name: document.getElementById(`${id}-name`).value,
+                    ability: document.getElementById(`${id}-ability`).value,
+                    proficient: document.getElementById(`${id}-prof`).checked,
+                    expertise: document.getElementById(`${id}-expertise`).checked,
+                    disadvantage: document.getElementById(`${id}-disadvantage`).checked,
+                });
+            });
+            
+            document.querySelectorAll('.condition-block').forEach(conditionElement => {
+                const id = conditionElement.id;
+                data.conditions.push({
+                    id: id,
+                    name: document.getElementById(`${id}-select`).value
+                });
             });
 
             document.querySelectorAll('.action-row').forEach(row => {
@@ -600,7 +802,9 @@
                     document.getElementById('alignment').value = data.characterInfo.alignment;
                     document.getElementById('experience').value = data.characterInfo.experience;
                     
+                    document.getElementById('armorClassDisplay').value = data.combatStats.ac;
                     document.getElementById('speed').value = data.combatStats.speed;
+                    document.getElementById('initiativeDisplay').value = data.combatStats.initiative;
                     document.getElementById('currentHP').value = data.combatStats.currentHP;
                     document.getElementById('maxHP').value = data.combatStats.maxHP;
                     document.getElementById('hitDice').value = data.combatStats.hitDice;
@@ -617,6 +821,7 @@
                         if (data.skills[id]) {
                             document.getElementById(`${id}Prof`).checked = data.skills[id].proficient;
                             document.getElementById(`${id}Expertise`).checked = data.skills[id].expertise;
+                            document.getElementById(`${id}Disadvantage`).checked = data.skills[id].disadvantage;
                         }
                     });
 
@@ -635,7 +840,26 @@
                     if (data.actions && Array.isArray(data.actions)) {
                         data.actions.forEach(actionData => createActionBlock(actionsContainer, actionData));
                     }
+
+                    const attunedItemsContainer = document.getElementById('attunedItems-container');
+                    attunedItemsContainer.innerHTML = '';
+                    if (data.attunedItems && Array.isArray(data.attunedItems.items)) {
+                        document.getElementById('maxAttunement').value = data.attunedItems.maxAttunement;
+                        data.attunedItems.items.forEach(item => createAttunedItemBlock(attunedItemsContainer, item));
+                    }
+
+                    const homebrewSkillsContainer = document.getElementById('homebrew-skills-container');
+                    homebrewSkillsContainer.innerHTML = '';
+                    if (data.homebrewSkills && Array.isArray(data.homebrewSkills)) {
+                        data.homebrewSkills.forEach(skillData => createHomebrewSkillBlock(homebrewSkillsContainer, skillData));
+                    }
                     
+                    const conditionsContainer = document.getElementById('conditions-container');
+                    conditionsContainer.innerHTML = '';
+                    if (data.conditions && Array.isArray(data.conditions)) {
+                        data.conditions.forEach(conditionData => createConditionBlock(conditionsContainer, conditionData));
+                    }
+
                     updateCharacterSheet();
                     alert('Character data imported successfully!');
                 } catch (error) {
